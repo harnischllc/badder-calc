@@ -1,1 +1,22 @@
-
+{
+  "leagueData": {
+    "avgWAR": 2.0,
+    "avgSalary": 4500000,
+    "replacementSalary": 740000,
+    "topPercentiles": {
+      "90": 5.0,
+      "75": 3.5,
+      "50": 2.0,
+      "25": 1.0
+    }
+  },
+  "presetPlayers": [
+    { "name": "Shohei Ohtani", "salary": 70, "war": 10.1 },
+    { "name": "Mike Trout", "salary": 35.5, "war": 2.3 },
+    { "name": "Mookie Betts", "salary": 30, "war": 6.8 },
+    { "name": "Yordan Alvarez", "salary": 7.8, "war": 5.5 },
+    { "name": "Ronald Acuña Jr.", "salary": 17, "war": 8.0 },
+    { "name": "Average Starter", "salary": 4.5, "war": 2.0 }
+  ],
+  "lastUpdated": "2024-03-15T00:00:00Z"
+}
