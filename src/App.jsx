@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, X, History, RefreshCw, Cloud, Share2, Info } from 'lucide-react';
+import { Calculator, X, History, RefreshCw, Cloud, Share2, Info, Search, Calendar, TrendingUp } from 'lucide-react';
 import * as ContractWARComponents from './components/ContractWARComponents';
 import ResultsDisplay from './components/ResultsDisplay';
 import { 
@@ -15,165 +15,51 @@ import {
 } from './utils/calculations';
 import { PRESET_PLAYERS, LEAGUE_DATA } from './utils/constants';
 
-// Data Loader Service
-const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/harnischllc/badder-calc/main/src/data/mlbData.json';
-const CACHE_KEY = 'mlb_data_cache';
-const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
-
-class MLBDataLoader {
-  constructor() {
-    this.data = null;
-    this.lastFetch = null;
+// Mock data for now - replace with real data later
+const MOCK_PLAYER_DATA = {
+  'Shohei Ohtani': {
+    current: { war: 10.1, salary: 70 },
+    seasons: {
+      2024: { war: 10.1, salary: 70 },
+      2023: { war: 10.0, salary: 30 },
+      2022: { war: 9.6, salary: 5.5 }
+    },
+    career: { totalWAR: 38.7, totalEarnings: 125.5 }
+  },
+  'Mike Trout': {
+    current: { war: 2.3, salary: 35.5 },
+    seasons: {
+      2024: { war: 2.3, salary: 35.5 },
+      2023: { war: 7.2, salary: 35.5 },
+      2022: { war: 3.4, salary: 35.5 }
+    },
+    career: { totalWAR: 85.2, totalEarnings: 292.5 }
+  },
+  'Mookie Betts': {
+    current: { war: 6.8, salary: 30 },
+    seasons: {
+      2024: { war: 6.8, salary: 30 },
+      2023: { war: 8.3, salary: 30 },
+      2022: { war: 6.4, salary: 27 }
+    },
+    career: { totalWAR: 65.5, totalEarnings: 182.3 }
   }
+};
 
-  isCacheValid() {
-    if (!this.lastFetch) return false;
-    return Date.now() - this.lastFetch < CACHE_DURATION;
-  }
-
-  async loadFromGitHub() {
-    try {
-      const response = await fetch(GITHUB_RAW_URL, {
-        cache: 'no-cache',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Successfully loaded MLB data from GitHub');
-      return data;
-    } catch (error) {
-      console.error('Failed to load from GitHub:', error);
-      throw error;
-    }
-  }
-
-  loadFromCache() {
-    try {
-      const cached = sessionStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        this.data = parsed.data;
-        this.lastFetch = parsed.timestamp;
-        console.log('Loaded MLB data from cache');
-        return this.data;
-      }
-    } catch (error) {
-      console.error('Cache load error:', error);
-    }
-    return null;
-  }
-
-  saveToCache(data) {
-    try {
-      const cacheData = {
-        data: data,
-        timestamp: Date.now()
-      };
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-      this.data = data;
-      this.lastFetch = cacheData.timestamp;
-    } catch (error) {
-      console.error('Cache save error:', error);
-    }
-  }
-
-  getDefaultData() {
-    return {
-      leagueData: LEAGUE_DATA,
-      presetPlayers: PRESET_PLAYERS,
-      lastUpdated: new Date().toISOString()
-    };
-  }
-
-  async getData(forceRefresh = false) {
-    // Check cache first unless forced refresh
-    if (!forceRefresh && this.isCacheValid()) {
-      return this.data;
-    }
-
-    // Try to load from cache
-    const cachedData = this.loadFromCache();
-    if (cachedData && !forceRefresh) {
-      return cachedData;
-    }
-
-    // Try to load from GitHub
-    try {
-      const githubData = await this.loadFromGitHub();
-      this.saveToCache(githubData);
-      return githubData;
-    } catch (error) {
-      // Fall back to cached data if available
-      if (cachedData) {
-        console.log('Using cached data due to GitHub error');
-        return cachedData;
-      }
-      
-      // Last resort: use default data
-      console.log('Using default data');
-      return this.getDefaultData();
-    }
-  }
-
-  getDataStatus() {
-    if (!this.lastFetch) {
-      return { isCloud: false, age: null, ageText: 'Using default data' };
-    }
-
-    const ageMs = Date.now() - this.lastFetch;
-    const ageMinutes = Math.floor(ageMs / 60000);
-    const ageHours = Math.floor(ageMinutes / 60);
-    
-    if (ageHours >= 24) {
-      const ageDays = Math.floor(ageHours / 24);
-      return { isCloud: true, age: ageMs, ageText: `${ageDays} day${ageDays !== 1 ? 's' : ''} ago` };
-    } else if (ageHours > 0) {
-      return { isCloud: true, age: ageMs, ageText: `${ageHours} hour${ageHours !== 1 ? 's' : ''} ago` };
-    } else {
-      return { isCloud: true, age: ageMs, ageText: `${ageMinutes} minute${ageMinutes !== 1 ? 's' : ''} ago` };
-    }
-  }
-}
-
-const mlbDataLoader = new MLBDataLoader();
-
-// Main Component
 const ContractWARCalculator = () => {
+  const [mode, setMode] = useState('manual'); // 'manual', 'lookup', 'historical', 'career'
   const [salary, setSalary] = useState('');
   const [war, setWar] = useState('');
+  const [selectedPlayer, setSelectedPlayer] = useState('');
+  const [selectedSeason, setSelectedSeason] = useState('2024');
   const [results, setResults] = useState(null);
   const [errors, setErrors] = useState({ salary: '', war: '' });
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
-  
-  const [mlbData, setMlbData] = useState(null);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [dataStatus, setDataStatus] = useState(null);
+  const [playerSearch, setPlayerSearch] = useState('');
+  const [showPlayerList, setShowPlayerList] = useState(false);
 
   useEffect(() => {
-    async function initialize() {
-      try {
-        setDataLoading(true);
-        const data = await mlbDataLoader.getData();
-        setMlbData(data);
-        setDataStatus(mlbDataLoader.getDataStatus());
-      } catch (error) {
-        console.error('Failed to load MLB data:', error);
-        const defaultData = mlbDataLoader.getDefaultData();
-        setMlbData(defaultData);
-      } finally {
-        setDataLoading(false);
-      }
-    }
-
-    initialize();
-
     const { salary: urlSalary, war: urlWar } = loadFromURLParams();
     if (urlSalary && urlWar) {
       setSalary(urlSalary);
@@ -184,37 +70,62 @@ const ContractWARCalculator = () => {
     setHistory(savedHistory);
   }, []);
 
-  const handleRefreshData = async () => {
-    setDataLoading(true);
-    try {
-      const data = await mlbDataLoader.getData(true);
-      setMlbData(data);
-      setDataStatus(mlbDataLoader.getDataStatus());
-    } catch (error) {
-      console.error('Failed to refresh data:', error);
-    } finally {
-      setDataLoading(false);
-    }
-  };
+  const availablePlayers = Object.keys(MOCK_PLAYER_DATA);
+  const filteredPlayers = availablePlayers.filter(player => 
+    player.toLowerCase().includes(playerSearch.toLowerCase())
+  );
 
   const handleCalculate = () => {
-    const validation = validateInputs(salary, war);
+    let salaryValue = salary;
+    let warValue = war;
+    let playerName = null;
+
+    if (mode === 'lookup' && selectedPlayer) {
+      const playerData = MOCK_PLAYER_DATA[selectedPlayer];
+      salaryValue = playerData.current.salary.toString();
+      warValue = playerData.current.war.toString();
+      playerName = selectedPlayer;
+    } else if (mode === 'historical' && selectedPlayer && selectedSeason) {
+      const playerData = MOCK_PLAYER_DATA[selectedPlayer];
+      const seasonData = playerData.seasons[selectedSeason];
+      if (seasonData) {
+        salaryValue = seasonData.salary.toString();
+        warValue = seasonData.war.toString();
+        playerName = `${selectedPlayer} (${selectedSeason})`;
+      }
+    } else if (mode === 'career' && selectedPlayer) {
+      const playerData = MOCK_PLAYER_DATA[selectedPlayer];
+      salaryValue = playerData.career.totalEarnings.toString();
+      warValue = playerData.career.totalWAR.toString();
+      playerName = `${selectedPlayer} (Career)`;
+    }
+
+    const validation = validateInputs(salaryValue, warValue);
     setErrors(validation.errors);
     
     if (!validation.isValid) {
       return;
     }
     
-    const leagueData = mlbData?.leagueData || LEAGUE_DATA;
-    const results = calculateContractMetrics(parseFloat(salary), parseFloat(war), leagueData);
+    const results = calculateContractMetrics(
+      parseFloat(salaryValue), 
+      parseFloat(warValue), 
+      LEAGUE_DATA
+    );
+    
+    // Add context to results
+    results.playerName = playerName;
+    results.mode = mode;
+    results.season = mode === 'historical' ? selectedSeason : null;
+    
     setResults(results);
     
     // Add to history
+    const historyName = playerName || `${results.playerWAR} WAR @ $${(results.playerSalary / 1000000).toFixed(1)}M`;
     const newEntry = {
       ...results,
-      name: `${results.playerWAR} WAR @ $${(results.playerSalary / 1000000).toFixed(1)}M`,
+      name: historyName,
       date: new Date().toLocaleDateString(),
-      // Include new metrics in history
       category: results.warValueCategory,
       costPerWAR: results.costPerWAR
     };
@@ -223,51 +134,37 @@ const ContractWARCalculator = () => {
     setHistory(updatedHistory);
     saveHistory(updatedHistory);
     
-    updateURLParams(salary, war);
-  };
-
-  const handlePresetPlayer = (player) => {
-    setSalary(player.salary.toString());
-    setWar(player.war.toString());
-    setErrors({ salary: '', war: '' });
+    if (mode === 'manual') {
+      updateURLParams(salaryValue, warValue);
+    }
   };
 
   const handleClear = () => {
     setSalary('');
     setWar('');
+    setSelectedPlayer('');
+    setPlayerSearch('');
     setResults(null);
     setErrors({ salary: '', war: '' });
     updateURLParams('', '');
   };
 
-  const handleClearHistory = () => {
-    setHistory([]);
-    clearHistory();
+  const handlePlayerSelect = (player) => {
+    setSelectedPlayer(player);
+    setPlayerSearch(player);
+    setShowPlayerList(false);
+    
+    // Auto-populate if in manual mode
+    if (mode === 'manual') {
+      const playerData = MOCK_PLAYER_DATA[player];
+      setSalary(playerData.current.salary.toString());
+      setWar(playerData.current.war.toString());
+    }
   };
-
-  const handleSelectHistory = (entry) => {
-    setSalary((entry.playerSalary / 1000000).toString());
-    setWar(entry.playerWAR.toString());
-    setErrors({ salary: '', war: '' });
-    setShowHistory(false);
-  };
-
-  if (dataLoading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <RefreshCw className="w-6 h-6 animate-spin" />
-          <span>Loading MLB data...</span>
-        </div>
-      </div>
-    );
-  }
-
-  const presetPlayers = mlbData?.presetPlayers || PRESET_PLAYERS;
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -279,74 +176,197 @@ const ContractWARCalculator = () => {
           <p className="text-gray-400 text-lg">
             Analyze MLB player contracts from a performance vs. salary perspective
           </p>
-          <p className="text-gray-500 text-sm mt-2">
-            Built for BadderSports.com
-          </p>
-          
-          {/* Cloud Status */}
-          {dataStatus && (
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm">
-              <Cloud className={`w-4 h-4 ${dataStatus.isCloud ? 'text-green-500' : 'text-gray-500'}`} />
-              <span className="text-gray-400">
-                {dataStatus.isCloud ? `Cloud data updated ${dataStatus.ageText}` : dataStatus.ageText}
-              </span>
-              <button
-                onClick={handleRefreshData}
-                className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800"
-                aria-label="Refresh data"
-              >
-                <RefreshCw className="w-3 h-3" />
-              </button>
-            </div>
-          )}
+        </div>
+
+        {/* Mode Selector */}
+        <div className="bg-gray-900 rounded-lg p-4 mb-6 border border-gray-800">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <button
+              onClick={() => setMode('manual')}
+              className={`px-4 py-2 rounded font-medium transition-colors ${
+                mode === 'manual' 
+                  ? 'bg-red-600 text-white' 
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Manual Entry
+            </button>
+            <button
+              onClick={() => setMode('lookup')}
+              className={`px-4 py-2 rounded font-medium transition-colors ${
+                mode === 'lookup' 
+                  ? 'bg-red-600 text-white' 
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Current Season
+            </button>
+            <button
+              onClick={() => setMode('historical')}
+              className={`px-4 py-2 rounded font-medium transition-colors ${
+                mode === 'historical' 
+                  ? 'bg-red-600 text-white' 
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Past Seasons
+            </button>
+            <button
+              onClick={() => setMode('career')}
+              className={`px-4 py-2 rounded font-medium transition-colors ${
+                mode === 'career' 
+                  ? 'bg-red-600 text-white' 
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Career Totals
+            </button>
+          </div>
         </div>
 
         {/* Main Calculator Card */}
         <div className="bg-gray-900 rounded-lg p-6 md:p-8 shadow-2xl border border-gray-800">
-          {/* Preset Players */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-              Quick Examples
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {presetPlayers.map((player) => (
-                <button
-                  key={player.name}
-                  onClick={() => handlePresetPlayer(player)}
-                  className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm transition-colors border border-gray-700 hover:border-red-500"
-                >
-                  {player.name}
-                </button>
-              ))}
+          
+          {/* Player Search (for non-manual modes) */}
+          {mode !== 'manual' && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">
+                Search Player
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={playerSearch}
+                  onChange={(e) => {
+                    setPlayerSearch(e.target.value);
+                    setShowPlayerList(true);
+                  }}
+                  onFocus={() => setShowPlayerList(true)}
+                  placeholder="Type player name..."
+                  className="w-full px-4 py-3 bg-gray-800 text-white rounded border border-gray-700 focus:outline-none focus:border-red-500 transition-colors pl-10"
+                />
+                <Search className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+                
+                {showPlayerList && filteredPlayers.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
+                    {filteredPlayers.map(player => (
+                      <button
+                        key={player}
+                        onClick={() => handlePlayerSelect(player)}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-700 transition-colors"
+                      >
+                        {player}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Input Fields */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <ContractWARComponents.InputField
-              label="Player Salary"
-              value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              placeholder="e.g., 35.5"
-              error={errors.salary}
-              tooltip="Enter the player's annual salary in millions"
-            />
-            
-            <ContractWARComponents.InputField
-              label="Player WAR"
-              value={war}
-              onChange={(e) => setWar(e.target.value)}
-              placeholder="e.g., 5.4"
-              error={errors.war}
-              tooltip="Wins Above Replacement for the season"
-            />
-          </div>
+          {/* Season Selector (for historical mode) */}
+          {mode === 'historical' && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">
+                Select Season
+              </label>
+              <select
+                value={selectedSeason}
+                onChange={(e) => setSelectedSeason(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 text-white rounded border border-gray-700 focus:outline-none focus:border-red-500 transition-colors"
+              >
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+              </select>
+            </div>
+          )}
+
+          {/* Input Fields (for manual mode) or Display (for other modes) */}
+          {mode === 'manual' ? (
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <ContractWARComponents.InputField
+                label="Player Salary"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
+                placeholder="e.g., 35.5"
+                error={errors.salary}
+                tooltip="Enter the player's annual salary in millions"
+              />
+              
+              <ContractWARComponents.InputField
+                label="Player WAR"
+                value={war}
+                onChange={(e) => setWar(e.target.value)}
+                placeholder="e.g., 5.4"
+                error={errors.war}
+                tooltip="Wins Above Replacement for the season"
+              />
+            </div>
+          ) : (
+            selectedPlayer && MOCK_PLAYER_DATA[selectedPlayer] && (
+              <div className="bg-gray-800 rounded p-4 mb-6 border border-gray-700">
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-white mb-2">{selectedPlayer}</h3>
+                  {mode === 'lookup' && (
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <div className="text-sm text-gray-400">Current WAR</div>
+                        <div className="text-2xl font-bold text-white">
+                          {MOCK_PLAYER_DATA[selectedPlayer].current.war}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">Current Salary</div>
+                        <div className="text-2xl font-bold text-white">
+                          ${MOCK_PLAYER_DATA[selectedPlayer].current.salary}M
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {mode === 'historical' && MOCK_PLAYER_DATA[selectedPlayer].seasons[selectedSeason] && (
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <div className="text-sm text-gray-400">{selectedSeason} WAR</div>
+                        <div className="text-2xl font-bold text-white">
+                          {MOCK_PLAYER_DATA[selectedPlayer].seasons[selectedSeason].war}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">{selectedSeason} Salary</div>
+                        <div className="text-2xl font-bold text-white">
+                          ${MOCK_PLAYER_DATA[selectedPlayer].seasons[selectedSeason].salary}M
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {mode === 'career' && (
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <div className="text-sm text-gray-400">Career WAR</div>
+                        <div className="text-2xl font-bold text-white">
+                          {MOCK_PLAYER_DATA[selectedPlayer].career.totalWAR}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">Career Earnings</div>
+                        <div className="text-2xl font-bold text-white">
+                          ${MOCK_PLAYER_DATA[selectedPlayer].career.totalEarnings}M
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-3 mb-6">
             <button
               onClick={handleCalculate}
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded font-medium transition-colors uppercase tracking-wider"
+              disabled={mode !== 'manual' && !selectedPlayer}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded font-medium transition-colors uppercase tracking-wider disabled:bg-gray-700 disabled:cursor-not-allowed"
             >
               Calculate Value
             </button>
@@ -387,23 +407,17 @@ const ContractWARCalculator = () => {
                 {history.map((entry, index) => (
                   <div
                     key={index}
-                    onClick={() => handleSelectHistory(entry)}
-                    className="p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors"
+                    className="p-3 bg-gray-700 rounded"
                   >
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="text-white font-medium">{entry.name}</div>
                         <div className="text-gray-400 text-xs mt-1">
-                          {entry.date} • {entry.contractEfficiency}x efficiency
+                          {entry.date} • ${entry.costPerWAR}M per WAR
                         </div>
-                        {entry.costPerWAR && (
-                          <div className="text-gray-400 text-xs">
-                            ${entry.costPerWAR}M per WAR • {entry.category}
-                          </div>
-                        )}
                       </div>
                       <div className={`text-sm font-medium ${getValueColor(entry.contractEfficiency)}`}>
-                        {getValueLabel(entry.contractEfficiency)}
+                        {entry.category}
                       </div>
                     </div>
                   </div>
