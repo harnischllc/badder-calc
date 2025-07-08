@@ -76,3 +76,105 @@ export const validateTeamInputs = (payroll, war) => {
   
   return { errors, isValid };
 };
+// Add to the end of calculations.js
+
+// URL parameter functions
+export const updateURLParams = (salary, war) => {
+  const params = new URLSearchParams();
+  if (salary) params.set('salary', salary);
+  if (war) params.set('war', war);
+  const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+  window.history.replaceState({}, '', newUrl);
+};
+
+export const loadFromURLParams = () => {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    salary: params.get('salary') || '',
+    war: params.get('war') || ''
+  };
+};
+
+// History functions
+export const saveHistory = (history) => {
+  localStorage.setItem('contractWARHistory', JSON.stringify(history));
+};
+
+export const loadHistory = () => {
+  try {
+    const saved = localStorage.getItem('contractWARHistory');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const clearHistory = () => {
+  localStorage.removeItem('contractWARHistory');
+};
+
+// Player calculation functions
+export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData) => {
+  const playerSalary = salaryInMillions * 1000000;
+  const marketRatePerWAR = 8000000; // $8M per WAR
+  
+  // Cost per WAR
+  const costPerWAR = playerWAR > 0 ? parseFloat((salaryInMillions / playerWAR).toFixed(2)) : 999;
+  
+  // Market value of player's WAR
+  const marketValue = (playerWAR * marketRatePerWAR) / 1000000;
+  
+  // Contract efficiency
+  const contractEfficiency = playerWAR > 0 ? 
+    parseFloat(((playerWAR * leagueData.replacementSalary) / playerSalary).toFixed(2)) : 0;
+  
+  // Surplus value
+  const surplusValue = marketValue - salaryInMillions;
+  
+  // Determine category based on $/WAR
+  let warValueCategory;
+  if (playerWAR <= 0) {
+    warValueCategory = 'Poor Value';
+  } else if (costPerWAR < 2.0) {
+    warValueCategory = 'Historic Bargain';
+  } else if (costPerWAR < 6.0) {
+    warValueCategory = 'High Value';
+  } else if (costPerWAR < 10.0) {
+    warValueCategory = 'Average';
+  } else {
+    warValueCategory = 'Poor Value';
+  }
+  
+  // Percentile rank (simplified)
+  const percentileRank = playerWAR > 5 ? 90 : playerWAR > 3.5 ? 75 : playerWAR > 2 ? 50 : 25;
+  
+  return {
+    playerSalary,
+    playerWAR,
+    costPerWAR,
+    leagueAvgPerWAR: 8.0,
+    contractEfficiency,
+    surplusValue: parseFloat(surplusValue.toFixed(1)),
+    marketValue: parseFloat(marketValue.toFixed(1)),
+    warValueCategory,
+    percentileRank
+  };
+};
+
+// Input validation
+export const validateInputs = (salary, war) => {
+  const errors = { salary: '', war: '' };
+  let isValid = true;
+  
+  if (!salary || parseFloat(salary) <= 0) {
+    errors.salary = 'Please enter a valid salary greater than 0';
+    isValid = false;
+  }
+  
+  if (war === '' || war === null || war === undefined) {
+    errors.war = 'Please enter a WAR value';
+    isValid = false;
+  }
+  
+  return { errors, isValid };
+};
