@@ -1,8 +1,8 @@
 // Google Sheets integration for current season data
 // You'll need to create a Google Sheets with columns: Player, Salary, fWAR, bWAR
 
-const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID'; // Replace with your sheet ID
-const API_KEY = 'YOUR_API_KEY'; // Replace with your API key (can be public for read-only)
+const SHEET_ID = '1Fdk51E1KpaZkoEldx-jnZqdZjwNmYt5qwJuSIsVOTC4'; // Replace with your sheet ID
+const API_KEY = 'AIzaSyCDC8IUHDfbH8xvR48-I-dCzfSqJM8NGdc'; // Replace with your API key (can be public for read-only)
 const RANGE = 'Sheet1!A:D'; // Adjust based on your sheet structure
 
 export async function fetchCurrentSeasonFromSheets() {
