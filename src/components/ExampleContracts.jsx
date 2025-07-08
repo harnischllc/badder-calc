@@ -42,31 +42,35 @@ const teamExamples = [
     payroll: '71',
     war: '55',
     colorClass: 'text-purple-500',
-    display: '$71M / 55 WAR'
+    display: '$71M / 55 WAR',
+    year: '2023'
   },
   {
-    category: 'Good',
-    team: 'Mid Market Team',
-    payroll: '150',
-    war: '45',
+    category: 'Above Avg',
+    team: 'Atlanta Braves',
+    payroll: '203',
+    war: '41',
     colorClass: 'text-green-500',
-    display: '$150M / 45 WAR'
+    display: '$203M / 41 WAR',
+    year: '2023'
   },
   {
     category: 'Average',
-    team: 'Big Market Team',
-    payroll: '250',
-    war: '50',
+    team: 'Texas Rangers',
+    payroll: '241',
+    war: '37.7',
     colorClass: 'text-yellow-500',
-    display: '$250M / 50 WAR'
+    display: '$241M / 37.7 WAR',
+    year: '2023'
   },
   {
-    category: 'Poor',
-    team: 'Underperforming',
-    payroll: '200',
-    war: '25',
+    category: 'Inefficient',
+    team: 'Oakland Athletics',
+    payroll: '62.7',
+    war: '2.7',
     colorClass: 'text-red-500',
-    display: '$200M / 25 WAR'
+    display: '$62.7M / 2.7 WAR',
+    year: '2023'
   }
 ];
 
@@ -76,7 +80,7 @@ const ExampleContracts = ({ mode, onExampleSelect }) => {
   return (
     <div className="bg-gray-900 rounded-lg p-3 md:p-4 mb-4 md:mb-6 border border-gray-800">
       <h3 className="text-xs sm:text-sm font-medium text-gray-400 uppercase tracking-wider mb-2 md:mb-3">
-        {mode === 'individual' ? 'Example Contracts' : 'Example Teams'}
+        {mode === 'individual' ? 'Example Contracts' : 'Example Teams (2023 Season)'}
       </h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {examples.map((example, index) => (
