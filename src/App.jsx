@@ -16,7 +16,7 @@ import {
 import { PRESET_PLAYERS, LEAGUE_DATA } from './utils/constants';
 
 // Data Loader Service
-const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/harnischllc/contract-war-calculator/main/src/data/mlbData.json';
+const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/harnischllc/badder-calc/main/src/data/mlbData.json';
 const CACHE_KEY = 'mlb_data_cache';
 const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
 
