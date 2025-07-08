@@ -7,7 +7,6 @@ import CalculatorForm from './components/CalculatorForm';
 import HistoryPanel from './components/HistoryPanel';
 import ResultsDisplay from './components/ResultsDisplay';
 import TeamResultsDisplay from './components/TeamResultsDisplay';
-import PoopConfetti from './components/PoopConfetti';
 import { useCalculatorHistory } from './hooks/useCalculatorHistory';
 import { useURLParams } from './hooks/useURLParams';
 import { 
@@ -27,7 +26,6 @@ const ContractWARCalculator = () => {
   const [warType, setWarType] = useState('avg');
   const [results, setResults] = useState(null);
   const [errors, setErrors] = useState({ salary: '', war: '', teamPayroll: '', teamWAR: '' });
-  const [showConfetti, setShowConfetti] = useState(false);
   
   const { history, showHistory, addToHistory, clearHistory, toggleHistory } = useCalculatorHistory();
   const { loadFromURL } = useURLParams(salary, war);
@@ -73,12 +71,6 @@ const ContractWARCalculator = () => {
       results.mode = 'individual';
       
       setResults(results);
-
-      // Trigger confetti for poor value contracts
-      if (results.warValueCategory === 'Poor Value') {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 100);
-      }
       
       addToHistory(results);
     } else {
@@ -95,12 +87,6 @@ const ContractWARCalculator = () => {
       
       results.mode = 'team';
       setResults(results);
-
-      // Trigger confetti for inefficient teams
-      if (results.teamCategory === 'Inefficient') {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 100);
-      }
       
       addToHistory(results);
     }
@@ -207,8 +193,6 @@ const ContractWARCalculator = () => {
           <p className="mt-1">Market rate: ~$8M per WAR • League avg team: ~43 WAR</p>
         </div>
       </div>
-      
-      <PoopConfetti isActive={showConfetti} />
     </div>
   );
 };
