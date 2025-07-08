@@ -309,7 +309,7 @@ const ContractWARCalculator = () => {
                   tooltip="Enter the player's annual salary in millions"
                 />
                 
-                  href="https://www.spotrac.com/mlb/contracts/"
+                <a href="https://www.spotrac.com/mlb/contracts/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
@@ -330,7 +330,7 @@ const ContractWARCalculator = () => {
                 />
                 <div className="flex gap-4 mt-2">
                   
-                    href="https://www.fangraphs.com/leaders/war"
+                 <a href="https://www.fangraphs.com/leaders/war"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
@@ -339,7 +339,7 @@ const ContractWARCalculator = () => {
                     fWAR
                   </a>
                   
-                    href="https://www.baseball-reference.com/leagues/AL/2024-WAR-leaders.shtml"
+                 <a href="https://www.baseball-reference.com/leagues/AL/2024-WAR-leaders.shtml"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
@@ -362,7 +362,7 @@ const ContractWARCalculator = () => {
                   tooltip="Enter the team's total payroll in millions"
                 />
                 
-                  href="https://www.spotrac.com/mlb/payroll/"
+                 <a href="https://www.spotrac.com/mlb/payroll/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
@@ -382,7 +382,7 @@ const ContractWARCalculator = () => {
                   tooltip="Combined WAR for all players"
                 />
                 
-                  href="https://www.fangraphs.com/teams"
+                  <a href="https://www.fangraphs.com/teams"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
