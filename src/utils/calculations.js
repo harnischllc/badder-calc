@@ -1,7 +1,7 @@
 import { LEAGUE_DATA } from './constants';
 
 // Team calculation functions
-export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData) => {
+export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData, gamesPlayed = 162) => {
   const teamPayroll = payrollInMillions * 1000000;
   const marketRatePerWAR = LEAGUE_DATA.marketRatePerWAR;
   
@@ -20,9 +20,20 @@ export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData) => 
   // Surplus value
   const surplusValue = marketValue - payrollInMillions;
   
-  // Win percentage estimate (using avgTeamWAR from constants)
-  const winPercentage = ((teamWAR / LEAGUE_DATA.avgTeamWAR) * 0.500).toFixed(3);
-  const projectedWins = Math.round((teamWAR / LEAGUE_DATA.avgTeamWAR) * 81);
+  // FIXED: Win projection based on current pace
+  // If games played is less than 162, project full season WAR
+  const projectedFullSeasonWAR = gamesPlayed < 162 
+    ? (teamWAR / gamesPlayed) * 162 
+    : teamWAR;
+  
+  // Win percentage and projected wins for full season
+  const winPercentage = ((projectedFullSeasonWAR / LEAGUE_DATA.avgTeamWAR) * 0.500).toFixed(3);
+  const projectedWins = Math.round((projectedFullSeasonWAR / LEAGUE_DATA.avgTeamWAR) * 81);
+  
+  // Current win pace (if games played is provided)
+  const currentWinPace = gamesPlayed < 162 
+    ? Math.round((teamWAR / LEAGUE_DATA.avgTeamWAR) * 81 * (162 / gamesPlayed))
+    : projectedWins;
   
   // Determine team category
   const teamCategory = getTeamCategory(costPerWAR);
@@ -37,7 +48,10 @@ export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData) => 
     surplusValue: parseFloat(surplusValue.toFixed(1)),
     winPercentage,
     projectedWins,
-    teamCategory
+    currentWinPace,
+    projectedFullSeasonWAR: parseFloat(projectedFullSeasonWAR.toFixed(1)),
+    teamCategory,
+    gamesPlayed
   };
 };
 
@@ -132,75 +146,4 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
 
 // Validate individual player inputs
 export const validateInputs = (salary, war) => {
-  const errors = { salary: '', war: '' };
-  let isValid = true;
-  
-  if (!salary || parseFloat(salary) <= 0) {
-    errors.salary = 'Please enter a valid salary greater than 0';
-    isValid = false;
-  }
-  
-  if (war === '' || war === null || war === undefined) {
-    errors.war = 'Please enter a WAR value';
-    isValid = false;
-  }
-  
-  if (parseFloat(war) < -5) {
-    errors.war = 'WAR seems unusually low. Please verify.';
-    isValid = false;
-  }
-  
-  if (parseFloat(war) > 15) {
-    errors.war = 'WAR seems unusually high. Please verify.';
-    isValid = false;
-  }
-  
-  return { errors, isValid };
-};
-
-// URL parameter functions
-export const updateURLParams = (salary, war) => {
-  const params = new URLSearchParams();
-  if (salary) params.set('salary', salary);
-  if (war) params.set('war', war);
-  
-  const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-  window.history.replaceState({}, '', newURL);
-};
-
-export const loadFromURLParams = () => {
-  const params = new URLSearchParams(window.location.search);
-  return {
-    salary: params.get('salary') || '',
-    war: params.get('war') || ''
-  };
-};
-
-// History functions
-const HISTORY_KEY = 'contractWARHistory';
-
-export const saveHistory = (history) => {
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  } catch (e) {
-    console.error('Failed to save history:', e);
-  }
-};
-
-export const loadHistory = () => {
-  try {
-    const saved = localStorage.getItem(HISTORY_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch (e) {
-    console.error('Failed to load history:', e);
-    return [];
-  }
-};
-
-export const clearHistory = () => {
-  try {
-    localStorage.removeItem(HISTORY_KEY);
-  } catch (e) {
-    console.error('Failed to clear history:', e);
-  }
-};
+  const errors = { sal
