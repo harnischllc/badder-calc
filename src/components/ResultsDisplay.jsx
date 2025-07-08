@@ -134,21 +134,35 @@ const ResultsDisplay = ({ results }) => {
         </div>
       </div>
 
-      {/* Analysis Summary */}
+      {/* Analysis Summary with Formulas */}
       <div className="bg-gray-800 rounded p-4 border border-gray-700">
-        <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">
-          Analysis Summary
+        <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
+          Calculation Breakdown
         </h4>
-        <p className="text-gray-300 text-sm leading-relaxed">
-          {results.playerWAR} WAR at ${(results.playerSalary / 1000000).toFixed(1)}M equals 
-          <span className={`font-bold mx-1 ${getCategoryColor(results.warValueCategory)}`}>
-            ${results.costPerWAR}M per WAR
-          </span>
-          ({results.warValueCategory}). 
-          This contract is {results.contractEfficiency}x the league average efficiency, 
-          representing a {results.surplusValue >= 0 ? 'surplus' : 'deficit'} value of 
-          ${Math.abs(results.surplusValue).toFixed(1)}M compared to market rate.
-        </p>
+        <div className="space-y-3 text-sm">
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Cost per WAR:</div>
+            <code className="text-white">
+              ${(results.playerSalary / 1000000).toFixed(1)}M ÷ {results.playerWAR} WAR = ${results.costPerWAR}M per WAR
+            </code>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Contract Efficiency:</div>
+            <code className="text-white">
+              ({results.playerWAR} WAR × $0.74M) ÷ ${(results.playerSalary / 1000000).toFixed(1)}M = {results.contractEfficiency}x
+            </code>
+            <div className="text-xs text-gray-500 mt-1">*Using league minimum ($740K) as baseline</div>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Surplus Value:</div>
+            <code className="text-white">
+              ({results.playerWAR} WAR × $8M) - ${(results.playerSalary / 1000000).toFixed(1)}M = ${results.surplusValue.toFixed(1)}M
+            </code>
+            <div className="text-xs text-gray-500 mt-1">*Market rate: $8M per WAR</div>
+          </div>
+        </div>
       </div>
     </div>
   );
