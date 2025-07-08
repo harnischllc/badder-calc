@@ -41,6 +41,11 @@ export const calculateContractMetrics = (salaryInMillions, war, leagueData) => {
 
 // Determine WAR value category based on cost per WAR
 export const getWARValueCategory = (costPerWAR) => {
+  // Handle negative WAR cases - always poor value
+  if (costPerWAR < 0) {
+    return 'Poor Value';
+  }
+  
   if (costPerWAR < WAR_VALUE_THRESHOLDS.historicBargain) {
     return 'Historic Bargain';
   } else if (costPerWAR < WAR_VALUE_THRESHOLDS.highValue) {
