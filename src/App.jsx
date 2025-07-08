@@ -192,13 +192,13 @@ const ContractWARCalculator = () => {
           {/* Input Fields */}
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
-              <ContractWARComponents.InputField
-                label="Player Salary"
+             <ContractWARComponents.InputField
+                label="Player Salary ($M)"
                 value={salary}
                 onChange={(e) => setSalary(e.target.value)}
                 placeholder="e.g., 35.5"
                 error={errors.salary}
-                tooltip="Enter the player's annual salary in millions"
+                tooltip="Enter the player's annual salary in millions (e.g., 3.1 = $3.1 million)"
               />
               <a
                 href="https://www.spotrac.com/mlb/contracts/"
