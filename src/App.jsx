@@ -484,7 +484,12 @@ const ContractWARCalculator = () => {
         </div>
       </div>
       
-      <PoopConfetti isActive={showConfetti} />
+      <PoopConfetti 
+        isActive={results && (
+          (results.mode === 'individual' && results.warValueCategory === 'Poor Value') ||
+          (results.mode === 'team' && results.teamCategory === 'Inefficient')
+        )} 
+/>
     </div>
   );
 };
