@@ -146,4 +146,75 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
 
 // Validate individual player inputs
 export const validateInputs = (salary, war) => {
-  const errors = { sal
+  const errors = { salary: '', war: '' };
+  let isValid = true;
+  
+  if (!salary || parseFloat(salary) <= 0) {
+    errors.salary = 'Please enter a valid salary greater than 0';
+    isValid = false;
+  }
+  
+  if (war === '' || war === null || war === undefined) {
+    errors.war = 'Please enter a WAR value';
+    isValid = false;
+  }
+  
+  if (parseFloat(war) < -5) {
+    errors.war = 'WAR seems unusually low. Please verify.';
+    isValid = false;
+  }
+  
+  if (parseFloat(war) > 15) {
+    errors.war = 'WAR seems unusually high. Please verify.';
+    isValid = false;
+  }
+  
+  return { errors, isValid };
+};
+
+// URL parameter functions
+export const updateURLParams = (salary, war) => {
+  const params = new URLSearchParams();
+  if (salary) params.set('salary', salary);
+  if (war) params.set('war', war);
+  
+  const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+  window.history.replaceState({}, '', newURL);
+};
+
+export const loadFromURLParams = () => {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    salary: params.get('salary') || '',
+    war: params.get('war') || ''
+  };
+};
+
+// History functions
+const HISTORY_KEY = 'contractWARHistory';
+
+export const saveHistory = (history) => {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error('Failed to save history:', e);
+  }
+};
+
+export const loadHistory = () => {
+  try {
+    const saved = localStorage.getItem(HISTORY_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    console.error('Failed to load history:', e);
+    return [];
+  }
+};
+
+export const clearHistory = () => {
+  try {
+    localStorage.removeItem(HISTORY_KEY);
+  } catch (e) {
+    console.error('Failed to clear history:', e);
+  }
+};
