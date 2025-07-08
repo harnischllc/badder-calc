@@ -3,6 +3,8 @@ export const LEAGUE_DATA = {
   avgWAR: 2.0,
   avgSalary: 4500000,
   replacementSalary: 740000,
+  marketRatePerWAR: 8000000,  // Add this - $8M per WAR
+  avgTeamWAR: 43,             // Add this - baseline for .500 team
   topPercentiles: {
     90: 5.0,
     75: 3.5,
