@@ -3,18 +3,20 @@ import { WAR_VALUE_THRESHOLDS, EFFICIENCY_THRESHOLDS } from './constants';
 // Core calculation functions
 export const calculateContractMetrics = (salaryInMillions, war, leagueData) => {
   const playerSalary = salaryInMillions * 1000000;
-  const leagueAvgPerWAR = (leagueData.avgSalary - leagueData.replacementSalary) / leagueData.avgWAR;
+  
+  // Use the actual market rate for WAR (around $8M in 2024)
+  const marketRatePerWAR = 8000000; // $8M per WAR
   
   // Calculate cost per WAR in millions
   const costPerWAR = parseFloat((salaryInMillions / war).toFixed(2));
   
-  // Market value based on league average
-  const marketValue = (war * leagueAvgPerWAR + leagueData.replacementSalary) / 1000000;
+  // Market value based on actual market rate
+  const marketValue = (war * marketRatePerWAR) / 1000000;
   
-  // Contract efficiency
-  const contractEfficiency = parseFloat(((marketValue * 1000000) / playerSalary).toFixed(2));
+  // Contract efficiency (ratio of market value to actual salary)
+  const contractEfficiency = parseFloat((marketValue / salaryInMillions).toFixed(2));
   
-  // Surplus value
+  // Surplus value (positive = team saves money, negative = overpaid)
   const surplusValue = marketValue - salaryInMillions;
   
   // Calculate percentile rank
@@ -27,10 +29,10 @@ export const calculateContractMetrics = (salaryInMillions, war, leagueData) => {
     playerSalary,
     playerWAR: war,
     costPerWAR,
-    leagueAvgPerWAR: (leagueAvgPerWAR / 1000000).toFixed(2),
-    marketValue,
+    leagueAvgPerWAR: (marketRatePerWAR / 1000000).toFixed(1), // Show $8.0M
+    marketValue: parseFloat(marketValue.toFixed(1)),
     contractEfficiency,
-    surplusValue,
+    surplusValue: parseFloat(surplusValue.toFixed(1)),
     percentileRank,
     warValueCategory,
     category: warValueCategory // for backwards compatibility
