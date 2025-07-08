@@ -15,7 +15,12 @@ export async function fetchCurrentSeasonFromSheets() {
     }
 
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      referrerPolicy: 'no-referrer-when-downgrade',
+      headers: {
+        'Referer': window.location.origin
+      }
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
