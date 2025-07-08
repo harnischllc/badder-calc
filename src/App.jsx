@@ -17,7 +17,7 @@ import {
 } from './utils/calculations';
 import { LEAGUE_DATA } from './utils/constants';
 
-const ContractWARCalculator = () => {
+const WARValueCalculator = () => {
   const [mode, setMode] = useState('individual');
   const [salary, setSalary] = useState('');
   const [war, setWar] = useState('');
@@ -104,12 +104,12 @@ const ContractWARCalculator = () => {
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
+              {/* Header */}
         <div className="text-center mb-6 md:mb-8">
           <div className="flex items-center justify-center gap-2 md:gap-3 mb-3 md:mb-4">
             <Calculator className="w-6 h-6 md:w-8 md:h-8 text-red-500" />
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-wider">
-              Contract WAR Calculator
+              WAR Value Calculator
             </h1>
           </div>
           <p className="text-gray-400 text-base md:text-lg px-4">
