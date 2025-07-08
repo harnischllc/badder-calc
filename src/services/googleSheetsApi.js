@@ -1,12 +1,17 @@
 // Google Sheets integration for current season data
-// You'll need to create a Google Sheets with columns: Player, Salary, fWAR, bWAR
+// Environment variables are prefixed with VITE_ for Vite to expose them
 
-const SHEET_ID = '1Fdk51E1KpaZkoEldx-jnZqdZjwNmYt5qwJuSIsVOTC4'; // Replace with your sheet ID
-const API_KEY = 'AIzaSyCDC8IUHDfbH8xvR48-I-dCzfSqJM8NGdc'; // Replace with your API key (can be public for read-only)
-const RANGE = 'Sheet1!A:D'; // Adjust based on your sheet structure
+const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEET_ID || 'YOUR_FALLBACK_SHEET_ID';
+const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || '';
+const RANGE = 'Sheet1!A:D';
 
 export async function fetchCurrentSeasonFromSheets() {
   try {
+    if (!API_KEY) {
+      console.warn('Google API key not found. Using static data.');
+      return getStaticCurrentSeason();
+    }
+
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
     const response = await fetch(url);
     
@@ -18,13 +23,12 @@ export async function fetchCurrentSeasonFromSheets() {
     return processSheetData(data.values);
   } catch (error) {
     console.error('Error fetching from Google Sheets:', error);
-    // Fallback to static data for current season
     return getStaticCurrentSeason();
   }
 }
 
 function processSheetData(rows) {
-  if (!rows || rows.length < 2) return {};
+  if (!rows || rows.length < 2) return getStaticCurrentSeason();
   
   const headers = rows[0];
   const playerData = {};
@@ -66,48 +70,4 @@ function getStaticCurrentSeason() {
       'Aaron Judge': { salary: 40, fWAR: 8.5, bWAR: 8.2, avgWAR: 8.35 }
     }
   };
-}
-
-// Instructions for setting up Google Sheets:
-/*
-1. Create a new Google Sheet
-2. Add headers: Player | Salary (M) | fWAR | bWAR
-3. Share the sheet publicly (view only)
-4. Get the Sheet ID from the URL
-5. Enable Google Sheets API in Google Cloud Console
-6. Create an API key (restricted to Sheets API)
-7. Replace SHEET_ID and API_KEY above
-*/
-
-export function getGoogleSheetsSetupInstructions() {
-  return `
-    Google Sheets Setup Instructions:
-    
-    1. Create a Google Sheet with these columns:
-       - Column A: Player Name
-       - Column B: Salary (in millions)
-       - Column C: fWAR
-       - Column D: bWAR
-    
-    2. Make the sheet publicly viewable:
-       - Click Share button
-       - Change to "Anyone with the link can view"
-    
-    3. Get your Sheet ID:
-       - Look at the URL: https://docs.google.com/spreadsheets/d/[SHEET_ID]/edit
-       - Copy the SHEET_ID part
-    
-    4. Get an API Key:
-       - Go to https://console.cloud.google.com/
-       - Create a new project or select existing
-       - Enable Google Sheets API
-       - Create credentials > API Key
-       - Restrict key to Google Sheets API
-    
-    5. Update the constants in this file with your values
-    
-    6. Use Zapier to auto-update the sheet:
-       - Trigger: New data from MLB stats source
-       - Action: Update Google Sheet row
-  `;
 }
