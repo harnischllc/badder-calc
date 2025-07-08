@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, X, History } from 'lucide-react';
+import { Calculator, X, History, ExternalLink } from 'lucide-react';
 import * as ContractWARComponents from './components/ContractWARComponents';
 import ResultsDisplay from './components/ResultsDisplay';
 import { 
@@ -156,23 +156,56 @@ const ContractWARCalculator = () => {
           
           {/* Input Fields */}
           <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <ContractWARComponents.InputField
-              label="Player Salary"
-              value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              placeholder="e.g., 35.5"
-              error={errors.salary}
-              tooltip="Enter the player's annual salary in millions"
-            />
+            <div>
+              <ContractWARComponents.InputField
+                label="Player Salary"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
+                placeholder="e.g., 35.5"
+                error={errors.salary}
+                tooltip="Enter the player's annual salary in millions"
+              />
+              <a
+                href="https://www.spotrac.com/mlb/contracts/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Look up salaries on Spotrac
+              </a>
+            </div>
             
-            <ContractWARComponents.InputField
-              label={`Player ${warType === 'avg' ? 'WAR' : warType}`}
-              value={war}
-              onChange={(e) => setWar(e.target.value)}
-              placeholder="e.g., 5.4"
-              error={errors.war}
-              tooltip={`Wins Above Replacement (${warType})`}
-            />
+            <div>
+              <ContractWARComponents.InputField
+                label={`Player ${warType === 'avg' ? 'WAR' : warType}`}
+                value={war}
+                onChange={(e) => setWar(e.target.value)}
+                placeholder="e.g., 5.4"
+                error={errors.war}
+                tooltip={`Wins Above Replacement (${warType})`}
+              />
+              <div className="flex gap-4 mt-2">
+                <a
+                  href="https://www.fangraphs.com/leaders/war"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  fWAR
+                </a>
+                <a
+                  href="https://www.baseball-reference.com/leagues/AL/2024-WAR-leaders.shtml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  bWAR
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Action Buttons */}
