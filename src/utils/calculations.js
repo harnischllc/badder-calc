@@ -1,13 +1,15 @@
+import { LEAGUE_DATA } from './constants';
+
 // Team calculation functions
 export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData) => {
   const teamPayroll = payrollInMillions * 1000000;
-  const marketRatePerWAR = 8000000; // $8M per WAR
+  const marketRatePerWAR = LEAGUE_DATA.marketRatePerWAR;
   
   // Calculate cost per WAR
   const costPerWAR = parseFloat((payrollInMillions / teamWAR).toFixed(2));
   
   // Expected WAR based on payroll
-  const expectedWAR = payrollInMillions / 8; // $8M per WAR
+  const expectedWAR = payrollInMillions / (marketRatePerWAR / 1000000);
   
   // Market value of team's actual WAR
   const marketValue = (teamWAR * marketRatePerWAR) / 1000000;
@@ -18,9 +20,9 @@ export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData) => 
   // Surplus value
   const surplusValue = marketValue - payrollInMillions;
   
-  // Win percentage estimate (43 WAR = .500 team)
-  const winPercentage = ((teamWAR / 43) * 0.500).toFixed(3);
-  const projectedWins = Math.round((teamWAR / 43) * 81);
+  // Win percentage estimate (using avgTeamWAR from constants)
+  const winPercentage = ((teamWAR / LEAGUE_DATA.avgTeamWAR) * 0.500).toFixed(3);
+  const projectedWins = Math.round((teamWAR / LEAGUE_DATA.avgTeamWAR) * 81);
   
   // Determine team category
   const teamCategory = getTeamCategory(costPerWAR);
@@ -80,7 +82,7 @@ export const validateTeamInputs = (payroll, war) => {
 // Individual player calculations
 export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData) => {
   const playerSalary = salaryInMillions * 1000000;
-  const marketRatePerWAR = 8000000; // $8M per WAR
+  const marketRatePerWAR = LEAGUE_DATA.marketRatePerWAR;
   
   // Cost per WAR
   const costPerWAR = playerWAR > 0 ? parseFloat((salaryInMillions / playerWAR).toFixed(2)) : Infinity;
@@ -124,7 +126,7 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
     marketValue,
     warValueCategory,
     percentileRank,
-    leagueAvgPerWAR: 8.0
+    leagueAvgPerWAR: marketRatePerWAR / 1000000
   };
 };
 
