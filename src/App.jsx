@@ -235,7 +235,7 @@ const ContractWARCalculator = () => {
           </div>
         )}
 
-        {/* Example Contracts (Individual Mode) or Team Examples (Team Mode) */}
+{/* Example Contracts (Individual Mode) or Team Examples (Team Mode) */}
         <div className="bg-gray-900 rounded-lg p-3 md:p-4 mb-4 md:mb-6 border border-gray-800">
           <h3 className="text-xs sm:text-sm font-medium text-gray-400 uppercase tracking-wider mb-2 md:mb-3">
             {mode === 'individual' ? 'Example Contracts' : 'Example Teams'}
@@ -248,28 +248,32 @@ const ContractWARCalculator = () => {
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
                 >
                   <div className="text-purple-500 font-semibold">Historic</div>
-                  <div className="text-gray-400 text-xs">Gooden '85</div>
+                  <div className="text-gray-400 text-xs">Dwight Gooden</div>
+                  <div className="text-gray-500 text-xs mt-1">$0.45M / 13.2 WAR</div>
                 </button>
                 <button
                   onClick={() => { setSalary('15'); setWar('3.5'); }}
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
                 >
                   <div className="text-green-500 font-semibold">High Value</div>
-                  <div className="text-gray-400 text-xs">Freeman '20</div>
+                  <div className="text-gray-400 text-xs">Freddie Freeman</div>
+                  <div className="text-gray-500 text-xs mt-1">$15M / 3.5 WAR</div>
                 </button>
                 <button
                   onClick={() => { setSalary('29.6'); setWar('3.5'); }}
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
                 >
                   <div className="text-yellow-500 font-semibold">Average</div>
-                  <div className="text-gray-400 text-xs">Greinke '18</div>
+                  <div className="text-gray-400 text-xs">Zack Greinke</div>
+                  <div className="text-gray-500 text-xs mt-1">$29.6M / 3.5 WAR</div>
                 </button>
                 <button
                   onClick={() => { setSalary('23.0'); setWar('-0.5'); }}
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
                 >
                   <div className="text-red-500 font-semibold">Poor Value</div>
-                  <div className="text-gray-400 text-xs">Davis '19</div>
+                  <div className="text-gray-400 text-xs">Chris Davis</div>
+                  <div className="text-gray-500 text-xs mt-1">$23M / -0.5 WAR</div>
                 </button>
               </>
             ) : (
@@ -279,28 +283,32 @@ const ContractWARCalculator = () => {
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
                 >
                   <div className="text-purple-500 font-semibold">Elite</div>
-                  <div className="text-gray-400 text-xs">TB Rays</div>
+                  <div className="text-gray-400 text-xs">Tampa Bay Rays</div>
+                  <div className="text-gray-500 text-xs mt-1">$71M / 55 WAR</div>
                 </button>
                 <button
                   onClick={() => { setTeamPayroll('150'); setTeamWAR('45'); }}
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
                 >
                   <div className="text-green-500 font-semibold">Good</div>
-                  <div className="text-gray-400 text-xs">Mid Market</div>
+                  <div className="text-gray-400 text-xs">Mid Market Team</div>
+                  <div className="text-gray-500 text-xs mt-1">$150M / 45 WAR</div>
                 </button>
                 <button
                   onClick={() => { setTeamPayroll('250'); setTeamWAR('50'); }}
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
                 >
                   <div className="text-yellow-500 font-semibold">Average</div>
-                  <div className="text-gray-400 text-xs">Big Market</div>
+                  <div className="text-gray-400 text-xs">Big Market Team</div>
+                  <div className="text-gray-500 text-xs mt-1">$250M / 50 WAR</div>
                 </button>
                 <button
                   onClick={() => { setTeamPayroll('200'); setTeamWAR('25'); }}
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
                 >
                   <div className="text-red-500 font-semibold">Poor</div>
-                  <div className="text-gray-400 text-xs">Underperform</div>
+                  <div className="text-gray-400 text-xs">Underperforming</div>
+                  <div className="text-gray-500 text-xs mt-1">$200M / 25 WAR</div>
                 </button>
               </>
             )}
