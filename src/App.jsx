@@ -151,6 +151,41 @@ const ContractWARCalculator = () => {
           </div>
         </div>
 
+        {/* Example Contracts */}
+        <div className="bg-gray-900 rounded-lg p-4 mb-6 border border-gray-800">
+          <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Example Contracts</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <button
+              onClick={() => { setSalary('0.45'); setWar('13.2'); }}
+              className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+            >
+              <div className="text-purple-500 font-semibold">Historic</div>
+              <div className="text-gray-400 text-xs">Gooden '85</div>
+            </button>
+            <button
+              onClick={() => { setSalary('3.0'); setWar('9.1'); }}
+              className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+            >
+              <div className="text-green-500 font-semibold">High Value</div>
+              <div className="text-gray-400 text-xs">Ohtani '21</div>
+            </button>
+            <button
+              onClick={() => { setSalary('29.6'); setWar('3.5'); }}
+              className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+            >
+              <div className="text-yellow-500 font-semibold">Average</div>
+              <div className="text-gray-400 text-xs">Greinke '18</div>
+            </button>
+            <button
+              onClick={() => { setSalary('23.0'); setWar('-0.5'); }}
+              className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+            >
+              <div className="text-red-500 font-semibold">Poor Value</div>
+              <div className="text-gray-400 text-xs">Davis '19</div>
+            </button>
+          </div>
+        </div>
+
         {/* Main Calculator Card */}
         <div className="bg-gray-900 rounded-lg p-6 md:p-8 shadow-2xl border border-gray-800">
           
