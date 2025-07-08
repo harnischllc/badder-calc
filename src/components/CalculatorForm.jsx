@@ -13,6 +13,8 @@ const CalculatorForm = ({
   teamWAR,
   setTeamWAR,
   warType,
+  payrollType,
+  setPayrollType,
   errors 
 }) => {
   if (mode === 'individual') {
@@ -73,45 +75,81 @@ const CalculatorForm = ({
 
   // Team mode
   return (
-    <div className="grid md:grid-cols-2 gap-6 mb-6">
-      <div>
-        <InputField
-          label="Team Payroll ($M)"
-          value={teamPayroll}
-          onChange={(e) => setTeamPayroll(e.target.value)}
-          placeholder="e.g., 150"
-          error={errors.teamPayroll}
-          tooltip="Enter the team's total payroll in millions"
-        />
-        
-        <a href="https://www.spotrac.com/mlb/payroll/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
-        >
-          <ExternalLink className="w-3 h-3" />
-          Team payrolls on Spotrac
-        </a>
+    <div className="space-y-6 mb-6">
+      {/* Payroll Type Selector */}
+      <div className="bg-gray-800 rounded p-4 border border-gray-700">
+        <label className="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
+          Payroll Type
+        </label>
+        <div className="flex gap-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="total"
+              checked={payrollType === 'total'}
+              onChange={(e) => setPayrollType(e.target.value)}
+              className="mr-2 text-red-500"
+            />
+            <span className="text-white">Total Payroll</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="active"
+              checked={payrollType === 'active'}
+              onChange={(e) => setPayrollType(e.target.value)}
+              className="mr-2 text-red-500"
+            />
+            <span className="text-white">Active Payroll</span>
+          </label>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          {payrollType === 'total' 
+            ? 'Includes injured list and retained salary'
+            : 'Only players on active roster'}
+        </p>
       </div>
-      
-      <div>
-        <InputField
-          label="Team WAR"
-          value={teamWAR}
-          onChange={(e) => setTeamWAR(e.target.value)}
-          placeholder="e.g., 45"
-          error={errors.teamWAR}
-          tooltip="Combined WAR for all players"
-        />
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <InputField
+            label={`${payrollType === 'total' ? 'Total' : 'Active'} Payroll ($M)`}
+            value={teamPayroll}
+            onChange={(e) => setTeamPayroll(e.target.value)}
+            placeholder="e.g., 150"
+            error={errors.teamPayroll}
+            tooltip={`Enter the team's ${payrollType} payroll in millions`}
+          />
+          
+          <a href="https://www.spotrac.com/mlb/payroll/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Team payrolls on Spotrac
+          </a>
+        </div>
         
-        <a href="https://www.fangraphs.com/depthcharts.aspx?position=Team"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
-        >
-          <ExternalLink className="w-3 h-3" />
-          Team WAR on FanGraphs
-        </a>
+        <div>
+          <InputField
+            label="Team WAR (Current Season)"
+            value={teamWAR}
+            onChange={(e) => setTeamWAR(e.target.value)}
+            placeholder="e.g., 45"
+            error={errors.teamWAR}
+            tooltip="Combined WAR for all players to date"
+          />
+          
+          <a href="https://www.fangraphs.com/depthcharts.aspx?position=Team"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Team WAR on FanGraphs
+          </a>
+        </div>
       </div>
     </div>
   );
