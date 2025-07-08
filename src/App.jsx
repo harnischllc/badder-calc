@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, X, History, ExternalLink } from 'lucide-react';
+import { Calculator, X, History, ExternalLink, Users, User } from 'lucide-react';
 import * as ContractWARComponents from './components/ContractWARComponents';
 import ResultsDisplay from './components/ResultsDisplay';
+import TeamResultsDisplay from './components/TeamResultsDisplay';
 import { 
-  calculateContractMetrics, 
-  validateInputs, 
+  calculateContractMetrics,
+  calculateTeamMetrics, 
+  validateInputs,
+  validateTeamInputs,
   updateURLParams, 
   loadFromURLParams,
   saveHistory,
@@ -14,15 +17,17 @@ import {
 import { LEAGUE_DATA } from './utils/constants';
 
 const ContractWARCalculator = () => {
+  const [mode, setMode] = useState('individual');
   const [salary, setSalary] = useState('');
   const [war, setWar] = useState('');
-  const [warType, setWarType] = useState('avg'); // 'fWAR', 'bWAR', 'avg'
+  const [teamPayroll, setTeamPayroll] = useState('');
+  const [teamWAR, setTeamWAR] = useState('');
+  const [warType, setWarType] = useState('avg');
   const [results, setResults] = useState(null);
-  const [errors, setErrors] = useState({ salary: '', war: '' });
+  const [errors, setErrors] = useState({ salary: '', war: '', teamPayroll: '', teamWAR: '' });
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Load URL params and history on mount
   useEffect(() => {
     const { salary: urlSalary, war: urlWar } = loadFromURLParams();
     if (urlSalary && urlWar) {
@@ -35,44 +40,72 @@ const ContractWARCalculator = () => {
   }, []);
 
   const handleCalculate = () => {
-    const validation = validateInputs(salary, war);
-    setErrors(validation.errors);
-    
-    if (!validation.isValid) {
-      return;
+    if (mode === 'individual') {
+      const validation = validateInputs(salary, war);
+      setErrors({ ...errors, ...validation.errors });
+      
+      if (!validation.isValid) return;
+      
+      const results = calculateContractMetrics(
+        parseFloat(salary), 
+        parseFloat(war), 
+        LEAGUE_DATA
+      );
+      
+      results.warType = warType;
+      results.mode = 'individual';
+      
+      setResults(results);
+      
+      const newEntry = {
+        ...results,
+        name: `${results.playerWAR} ${warType === 'avg' ? 'WAR' : warType} @ $${(results.playerSalary / 1000000).toFixed(1)}M`,
+        date: new Date().toLocaleDateString(),
+        category: results.warValueCategory,
+        costPerWAR: results.costPerWAR
+      };
+      
+      const updatedHistory = [newEntry, ...history].slice(0, 10);
+      setHistory(updatedHistory);
+      saveHistory(updatedHistory);
+      
+      updateURLParams(salary, war);
+    } else {
+      const validation = validateTeamInputs(teamPayroll, teamWAR);
+      setErrors({ ...errors, ...validation.errors });
+      
+      if (!validation.isValid) return;
+      
+      const results = calculateTeamMetrics(
+        parseFloat(teamPayroll), 
+        parseFloat(teamWAR), 
+        LEAGUE_DATA
+      );
+      
+      results.mode = 'team';
+      setResults(results);
+      
+      const newEntry = {
+        ...results,
+        name: `Team: ${results.teamWAR} WAR @ $${results.teamPayroll}M`,
+        date: new Date().toLocaleDateString(),
+        category: results.teamCategory,
+        costPerWAR: results.costPerWAR
+      };
+      
+      const updatedHistory = [newEntry, ...history].slice(0, 10);
+      setHistory(updatedHistory);
+      saveHistory(updatedHistory);
     }
-    
-    const results = calculateContractMetrics(
-      parseFloat(salary), 
-      parseFloat(war), 
-      LEAGUE_DATA
-    );
-    
-    results.warType = warType;
-    
-    setResults(results);
-    
-    // Add to history
-    const newEntry = {
-      ...results,
-      name: `${results.playerWAR} ${warType === 'avg' ? 'WAR' : warType} @ $${(results.playerSalary / 1000000).toFixed(1)}M`,
-      date: new Date().toLocaleDateString(),
-      category: results.warValueCategory,
-      costPerWAR: results.costPerWAR
-    };
-    
-    const updatedHistory = [newEntry, ...history].slice(0, 10);
-    setHistory(updatedHistory);
-    saveHistory(updatedHistory);
-    
-    updateURLParams(salary, war);
   };
 
   const handleClear = () => {
     setSalary('');
     setWar('');
+    setTeamPayroll('');
+    setTeamWAR('');
     setResults(null);
-    setErrors({ salary: '', war: '' });
+    setErrors({ salary: '', war: '', teamPayroll: '', teamWAR: '' });
     updateURLParams('', '');
   };
 
@@ -84,12 +117,16 @@ const ContractWARCalculator = () => {
   const getCategoryColor = (category) => {
     switch (category) {
       case 'Historic Bargain':
+      case 'Elite Efficiency':
         return 'text-purple-500';
       case 'High Value':
+      case 'Above Average':
         return 'text-green-500';
       case 'Average':
         return 'text-yellow-500';
       case 'Poor Value':
+      case 'Below Average':
+      case 'Inefficient':
         return 'text-red-500';
       default:
         return 'text-gray-500';
@@ -108,81 +145,151 @@ const ContractWARCalculator = () => {
             </h1>
           </div>
           <p className="text-gray-400 text-base md:text-lg px-4">
-            Analyze MLB player contracts from a performance vs. salary perspective
+            Analyze MLB contracts from a performance vs. salary perspective
           </p>
         </div>
 
-        {/* WAR Type Toggle */}
+        {/* Mode Toggle */}
         <div className="bg-gray-900 rounded-lg p-3 md:p-4 mb-4 md:mb-6 border border-gray-800">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-            <span className="text-gray-400 text-xs sm:text-sm uppercase tracking-wider">WAR Type:</span>
+            <span className="text-gray-400 text-xs sm:text-sm uppercase tracking-wider">Mode:</span>
             <div className="flex bg-gray-800 rounded-lg p-1">
               <button
-                onClick={() => setWarType('fWAR')}
-                className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors ${
-                  warType === 'fWAR' 
+                onClick={() => { setMode('individual'); handleClear(); }}
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors flex items-center gap-2 ${
+                  mode === 'individual' 
                     ? 'bg-red-600 text-white' 
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                fWAR
+                <User className="w-4 h-4" />
+                Individual Player
               </button>
               <button
-                onClick={() => setWarType('avg')}
-                className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors ${
-                  warType === 'avg' 
+                onClick={() => { setMode('team'); handleClear(); }}
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors flex items-center gap-2 ${
+                  mode === 'team' 
                     ? 'bg-red-600 text-white' 
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Average
-              </button>
-              <button
-                onClick={() => setWarType('bWAR')}
-                className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors ${
-                  warType === 'bWAR' 
-                    ? 'bg-red-600 text-white' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                bWAR
+                <Users className="w-4 h-4" />
+                Team Analysis
               </button>
             </div>
           </div>
         </div>
 
-        {/* Example Contracts */}
+        {/* WAR Type Toggle (Individual Mode Only) */}
+        {mode === 'individual' && (
+          <div className="bg-gray-900 rounded-lg p-3 md:p-4 mb-4 md:mb-6 border border-gray-800">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+              <span className="text-gray-400 text-xs sm:text-sm uppercase tracking-wider">WAR Type:</span>
+              <div className="flex bg-gray-800 rounded-lg p-1">
+                <button
+                  onClick={() => setWarType('fWAR')}
+                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors ${
+                    warType === 'fWAR' 
+                      ? 'bg-red-600 text-white' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  fWAR
+                </button>
+                <button
+                  onClick={() => setWarType('avg')}
+                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors ${
+                    warType === 'avg' 
+                      ? 'bg-red-600 text-white' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Average
+                </button>
+                <button
+                  onClick={() => setWarType('bWAR')}
+                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors ${
+                    warType === 'bWAR' 
+                      ? 'bg-red-600 text-white' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  bWAR
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Example Contracts (Individual Mode) or Team Examples (Team Mode) */}
         <div className="bg-gray-900 rounded-lg p-3 md:p-4 mb-4 md:mb-6 border border-gray-800">
-          <h3 className="text-xs sm:text-sm font-medium text-gray-400 uppercase tracking-wider mb-2 md:mb-3">Example Contracts</h3>
+          <h3 className="text-xs sm:text-sm font-medium text-gray-400 uppercase tracking-wider mb-2 md:mb-3">
+            {mode === 'individual' ? 'Example Contracts' : 'Example Teams'}
+          </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <button
-              onClick={() => { setSalary('0.45'); setWar('13.2'); }}
-              className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
-            >
-              <div className="text-purple-500 font-semibold">Historic</div>
-              <div className="text-gray-400 text-xs">Gooden '85</div>
-            </button>
-            <button
-              onClick={() => { setSalary('15'); setWar('3.5'); }}
-              className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
-            >
-              <div className="text-green-500 font-semibold">High Value</div>
-              <div className="text-gray-400 text-xs">Freeman '20</div>
-            </button>
-            <button
-              onClick={() => { setSalary('29.6'); setWar('3.5'); }}
-              className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
-            >
-              <div className="text-yellow-500 font-semibold">Average</div>
-              <div className="text-gray-400 text-xs">Greinke '18</div>
-            </button>
-            <button
-              onClick={() => { setSalary('23.0'); setWar('-0.5'); }}
-              className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
-            >
-              <div className="text-red-500 font-semibold">Poor Value</div>
-              <div className="text-gray-400 text-xs">Davis '19</div>
-            </button>
+            {mode === 'individual' ? (
+              <>
+                <button
+                  onClick={() => { setSalary('0.45'); setWar('13.2'); }}
+                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
+                >
+                  <div className="text-purple-500 font-semibold">Historic</div>
+                  <div className="text-gray-400 text-xs">Gooden '85</div>
+                </button>
+                <button
+                  onClick={() => { setSalary('15'); setWar('3.5'); }}
+                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
+                >
+                  <div className="text-green-500 font-semibold">High Value</div>
+                  <div className="text-gray-400 text-xs">Freeman '20</div>
+                </button>
+                <button
+                  onClick={() => { setSalary('29.6'); setWar('3.5'); }}
+                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
+                >
+                  <div className="text-yellow-500 font-semibold">Average</div>
+                  <div className="text-gray-400 text-xs">Greinke '18</div>
+                </button>
+                <button
+                  onClick={() => { setSalary('23.0'); setWar('-0.5'); }}
+                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
+                >
+                  <div className="text-red-500 font-semibold">Poor Value</div>
+                  <div className="text-gray-400 text-xs">Davis '19</div>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => { setTeamPayroll('71'); setTeamWAR('55'); }}
+                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
+                >
+                  <div className="text-purple-500 font-semibold">Elite</div>
+                  <div className="text-gray-400 text-xs">TB Rays</div>
+                </button>
+                <button
+                  onClick={() => { setTeamPayroll('150'); setTeamWAR('45'); }}
+                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
+                >
+                  <div className="text-green-500 font-semibold">Good</div>
+                  <div className="text-gray-400 text-xs">Mid Market</div>
+                </button>
+                <button
+                  onClick={() => { setTeamPayroll('250'); setTeamWAR('50'); }}
+                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
+                >
+                  <div className="text-yellow-500 font-semibold">Average</div>
+                  <div className="text-gray-400 text-xs">Big Market</div>
+                </button>
+                <button
+                  onClick={() => { setTeamPayroll('200'); setTeamWAR('25'); }}
+                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
+                >
+                  <div className="text-red-500 font-semibold">Poor</div>
+                  <div className="text-gray-400 text-xs">Underperform</div>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -190,58 +297,102 @@ const ContractWARCalculator = () => {
         <div className="bg-gray-900 rounded-lg p-4 sm:p-6 md:p-8 shadow-2xl border border-gray-800">
           
           {/* Input Fields */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div>
-             <ContractWARComponents.InputField
-                label="Player Salary ($M)"
-                value={salary}
-                onChange={(e) => setSalary(e.target.value)}
-                placeholder="e.g., 35.5"
-                error={errors.salary}
-                tooltip="Enter the player's annual salary in millions (e.g., 3.1 = $3.1 million)"
-              />
-              <a
-                href="https://www.spotrac.com/mlb/contracts/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Look up salaries on Spotrac
-              </a>
-            </div>
-            
-            <div>
-              <ContractWARComponents.InputField
-                label={`Player ${warType === 'avg' ? 'WAR' : warType}`}
-                value={war}
-                onChange={(e) => setWar(e.target.value)}
-                placeholder="e.g., 5.4"
-                error={errors.war}
-                tooltip={`Wins Above Replacement (${warType})`}
-              />
-              <div className="flex gap-4 mt-2">
-                <a
-                  href="https://www.fangraphs.com/leaders/war"
+          {mode === 'individual' ? (
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <ContractWARComponents.InputField
+                  label="Player Salary ($M)"
+                  value={salary}
+                  onChange={(e) => setSalary(e.target.value)}
+                  placeholder="e.g., 35.5"
+                  error={errors.salary}
+                  tooltip="Enter the player's annual salary in millions"
+                />
+                
+                  href="https://www.spotrac.com/mlb/contracts/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+                  className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  fWAR
+                  Look up salaries on Spotrac
                 </a>
-                <a
-                  href="https://www.baseball-reference.com/leagues/AL/2024-WAR-leaders.shtml"
+              </div>
+              
+              <div>
+                <ContractWARComponents.InputField
+                  label={`Player ${warType === 'avg' ? 'WAR' : warType}`}
+                  value={war}
+                  onChange={(e) => setWar(e.target.value)}
+                  placeholder="e.g., 5.4"
+                  error={errors.war}
+                  tooltip={`Wins Above Replacement (${warType})`}
+                />
+                <div className="flex gap-4 mt-2">
+                  
+                    href="https://www.fangraphs.com/leaders/war"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    fWAR
+                  </a>
+                  
+                    href="https://www.baseball-reference.com/leagues/AL/2024-WAR-leaders.shtml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    bWAR
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <ContractWARComponents.InputField
+                  label="Team Payroll ($M)"
+                  value={teamPayroll}
+                  onChange={(e) => setTeamPayroll(e.target.value)}
+                  placeholder="e.g., 150"
+                  error={errors.teamPayroll}
+                  tooltip="Enter the team's total payroll in millions"
+                />
+                
+                  href="https://www.spotrac.com/mlb/payroll/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+                  className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  bWAR
+                  Team payrolls on Spotrac
+                </a>
+              </div>
+              
+              <div>
+                <ContractWARComponents.InputField
+                  label="Team WAR"
+                  value={teamWAR}
+                  onChange={(e) => setTeamWAR(e.target.value)}
+                  placeholder="e.g., 45"
+                  error={errors.teamWAR}
+                  tooltip="Combined WAR for all players"
+                />
+                
+                  href="https://www.fangraphs.com/teams"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Team WAR on FanGraphs
                 </a>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-2 sm:gap-3 mb-4 md:mb-6">
@@ -305,13 +456,17 @@ const ContractWARCalculator = () => {
           )}
 
           {/* Results Display */}
-          {results && <ResultsDisplay results={results} />}
+          {results && (
+            results.mode === 'individual' ? 
+              <ResultsDisplay results={results} /> : 
+              <TeamResultsDisplay results={results} />
+          )}
         </div>
 
         {/* Footer Info */}
         <div className="text-center mt-6 md:mt-8 text-gray-500 text-xs sm:text-sm">
           <p>League averages based on 2024 MLB data</p>
-          <p className="mt-1">Market rate: ~$8M per WAR</p>
+          <p className="mt-1">Market rate: ~$8M per WAR • League avg team: ~43 WAR</p>
         </div>
       </div>
     </div>
