@@ -382,7 +382,7 @@ const ContractWARCalculator = () => {
                   tooltip="Combined WAR for all players"
                 />
                 
-                  <a href="https://www.fangraphs.com/teams"
+                  <a href="https://www.fangraphs.com/depthcharts.aspx?position=Team"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
