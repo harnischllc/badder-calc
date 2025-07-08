@@ -158,7 +158,7 @@ const ResultsDisplay = ({ results }) => {
           <div className="p-3 bg-gray-900 rounded">
             <div className="text-gray-400 mb-1">Surplus Value:</div>
             <code className="text-white">
-              ({results.playerWAR} WAR × $8M) - ${(results.playerSalary / 1000000).toFixed(1)}M = ${results.surplusValue.toFixed(1)}M
+              ({results.playerWAR} WAR × ${results.leagueAvgPerWAR}M) - ${(results.playerSalary / 1000000).toFixed(1)}M = ${results.surplusValue.toFixed(1)}M
             </code>
             <div className="text-xs text-gray-500 mt-1">*Market rate: $8M per WAR</div>
           </div>
