@@ -139,4 +139,48 @@ const TeamResultsDisplay = ({ results }) => {
       {/* Analysis Summary with Formulas */}
       <div className="bg-gray-800 rounded p-4 border border-gray-700">
         <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-          Calculation Break
+          Calculation Breakdown
+        </h4>
+        <div className="space-y-3 text-sm">
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Cost per WAR:</div>
+            <code className="text-white">
+              ${results.teamPayroll}M ÷ {results.teamWAR} WAR = ${results.costPerWAR}M per WAR
+            </code>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Expected WAR (at market rate):</div>
+            <code className="text-white">
+              ${results.teamPayroll}M ÷ $8M per WAR = {results.expectedWAR} WAR
+            </code>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Efficiency Rating:</div>
+            <code className="text-white">
+              {results.teamWAR} WAR ÷ {results.expectedWAR} expected WAR = {results.efficiency}x
+            </code>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Projected Wins:</div>
+            <code className="text-white">
+              ({results.teamWAR} WAR ÷ 43 WAR) × 81 wins = {results.projectedWins} wins
+            </code>
+            <div className="text-xs text-gray-500 mt-1">*.500 team = 43 WAR baseline</div>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Surplus Value:</div>
+            <code className="text-white">
+              ({results.teamWAR} WAR × $8M) - ${results.teamPayroll}M = ${results.surplusValue.toFixed(1)}M
+            </code>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TeamResultsDisplay;
