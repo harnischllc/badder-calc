@@ -197,4 +197,4 @@ const WARValueCalculator = () => {
   );
 };
 
-export default ContractWARCalculator;
+export default WARValueCalculator;
