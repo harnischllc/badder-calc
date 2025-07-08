@@ -13,10 +13,10 @@ export const LEAGUE_DATA = {
 
 // $/WAR thresholds for categorization (in millions)
 export const WAR_VALUE_THRESHOLDS = {
-  historicBargain: 1.0,   // < $1M per WAR
-  highValue: 4.0,         // < $4M per WAR  
-  average: 10.0,          // < $10M per WAR
-  // >= $10M per WAR is Poor Value
+  historicBargain: 2.0,   // < $2M per WAR (75% off market)
+  highValue: 6.0,         // < $6M per WAR (25% off market)  
+  average: 10.0,          // < $10M per WAR (up to 25% over market)
+  // >= $10M per WAR is Poor Value (25%+ overpay)
 };
 
 // Contract efficiency thresholds
