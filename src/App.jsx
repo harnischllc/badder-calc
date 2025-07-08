@@ -190,7 +190,32 @@ const WARValueCalculator = () => {
         {/* Footer Info */}
         <div className="text-center mt-6 md:mt-8 text-gray-500 text-xs sm:text-sm">
           <p>League averages based on 2024 MLB data</p>
-          <p className="mt-1">Market rate: ~$8M per WAR • League avg team: ~43 WAR</p>
+          <p className="mt-1">
+            Market rate: ~${LEAGUE_DATA.marketRatePerWAR / 1000000}M per WAR • 
+            League avg team: ~{LEAGUE_DATA.avgTeamWAR} WAR
+          </p>
+          <div className="mt-3 pt-3 border-t border-gray-800">
+            <p>
+              Visit us at{' '}
+              <a 
+                href="https://baddersports.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-red-500 hover:text-red-400 transition-colors"
+              >
+                BadderSports.com
+              </a>
+              {' '}• Check out the show -{' '}
+              <a 
+                href="https://www.youtube.com/channel/UCvkFXHG5mZyQfsmmf7aU5lQ" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-red-500 hover:text-red-400 transition-colors"
+              >
+                @swingbadderpodcast
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </div>
