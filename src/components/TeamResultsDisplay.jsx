@@ -1,17 +1,16 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Activity, Award, Users } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Activity, Award, AlertCircle } from 'lucide-react';
 
-const TeamResultsDisplay = ({ results }) => {
+const ResultsDisplay = ({ results }) => {
   const getCategoryColor = (category) => {
     switch (category) {
-      case 'Elite Efficiency':
+      case 'Historic Bargain':
         return 'text-purple-500';
-      case 'Above Average':
+      case 'High Value':
         return 'text-green-500';
       case 'Average':
         return 'text-yellow-500';
-      case 'Below Average':
-      case 'Inefficient':
+      case 'Poor Value':
         return 'text-red-500';
       default:
         return 'text-gray-500';
@@ -20,38 +19,37 @@ const TeamResultsDisplay = ({ results }) => {
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'Elite Efficiency':
+      case 'Historic Bargain':
         return <Award className="w-5 h-5" />;
-      case 'Above Average':
+      case 'High Value':
         return <TrendingUp className="w-5 h-5" />;
       case 'Average':
         return <Activity className="w-5 h-5" />;
-      case 'Below Average':
-      case 'Inefficient':
+      case 'Poor Value':
         return <TrendingDown className="w-5 h-5" />;
       default:
-        return <Users className="w-5 h-5" />;
+        return <AlertCircle className="w-5 h-5" />;
     }
   };
 
   const getEfficiencyColor = (efficiency) => {
-    if (efficiency >= 1.5) return 'text-purple-500';
-    if (efficiency >= 1.2) return 'text-green-500';
-    if (efficiency >= 0.9) return 'text-yellow-500';
+    if (efficiency >= 2) return 'text-purple-500';
+    if (efficiency >= 1.5) return 'text-green-500';
+    if (efficiency >= 1) return 'text-yellow-500';
     return 'text-red-500';
   };
 
   return (
     <div className="space-y-6">
-      {/* Primary Result */}
+      {/* Primary Result - $/WAR */}
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-6 border border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white uppercase tracking-wider">
-            Team Analysis
+            Contract Analysis
           </h3>
-          <div className={`flex items-center gap-2 ${getCategoryColor(results.teamCategory)}`}>
-            {getCategoryIcon(results.teamCategory)}
-            <span className="font-medium">{results.teamCategory}</span>
+          <div className={`flex items-center gap-2 ${getCategoryColor(results.warValueCategory)}`}>
+            {getCategoryIcon(results.warValueCategory)}
+            <span className="font-medium">{results.warValueCategory}</span>
           </div>
         </div>
         
@@ -65,33 +63,33 @@ const TeamResultsDisplay = ({ results }) => {
               ${results.costPerWAR}M
             </div>
             <div className="text-sm text-gray-500 mt-1">
-              League avg: $8.0M
+              League avg: ${results.leagueAvgPerWAR}M
             </div>
           </div>
 
-          {/* Efficiency */}
+          {/* Contract Efficiency */}
           <div className="text-center">
             <div className="text-sm text-gray-400 uppercase tracking-wider mb-1">
-              Efficiency Rating
+              Contract Efficiency
             </div>
-            <div className={`text-3xl font-bold ${getEfficiencyColor(results.efficiency)}`}>
-              {results.efficiency}x
+            <div className={`text-3xl font-bold ${getEfficiencyColor(results.contractEfficiency)}`}>
+              {results.contractEfficiency}x
             </div>
             <div className="text-sm text-gray-500 mt-1">
-              vs. expected WAR
+              {results.contractEfficiency >= 1 ? 'Above' : 'Below'} average
             </div>
           </div>
 
-          {/* Projected Wins */}
+          {/* Surplus Value */}
           <div className="text-center">
             <div className="text-sm text-gray-400 uppercase tracking-wider mb-1">
-              Projected Wins
+              Surplus Value
             </div>
-            <div className="text-3xl font-bold text-white">
-              {results.projectedWins}
+            <div className={`text-3xl font-bold ${results.surplusValue >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              ${Math.abs(results.surplusValue).toFixed(1)}M
             </div>
             <div className="text-sm text-gray-500 mt-1">
-              {results.winPercentage} W%
+              {results.surplusValue >= 0 ? 'Team saves' : 'Overpaid by'}
             </div>
           </div>
         </div>
@@ -101,58 +99,73 @@ const TeamResultsDisplay = ({ results }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-800 rounded p-4 border border-gray-700">
           <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-            Team WAR
+            Player WAR
           </div>
           <div className="text-xl font-bold text-white">
-            {results.teamWAR}
+            {results.playerWAR}
           </div>
         </div>
 
         <div className="bg-gray-800 rounded p-4 border border-gray-700">
           <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-            Payroll
+            Player Salary
           </div>
           <div className="text-xl font-bold text-white">
-            ${results.teamPayroll}M
+            ${(results.playerSalary / 1000000).toFixed(1)}M
           </div>
         </div>
 
         <div className="bg-gray-800 rounded p-4 border border-gray-700">
           <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-            Expected WAR
+            Market Value
           </div>
           <div className="text-xl font-bold text-white">
-            {results.expectedWAR}
+            ${results.marketValue.toFixed(1)}M
           </div>
         </div>
 
         <div className="bg-gray-800 rounded p-4 border border-gray-700">
           <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-            Surplus Value
+            Percentile
           </div>
-          <div className={`text-xl font-bold ${results.surplusValue >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            ${Math.abs(results.surplusValue).toFixed(1)}M
+          <div className="text-xl font-bold text-white">
+            {results.percentileRank}%
           </div>
         </div>
       </div>
 
-      {/* Analysis Summary */}
+      {/* Analysis Summary with Formulas */}
       <div className="bg-gray-800 rounded p-4 border border-gray-700">
-        <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">
-          Analysis Summary
+        <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
+          Calculation Breakdown
         </h4>
-        <p className="text-gray-300 text-sm leading-relaxed">
-          With {results.teamWAR} WAR at ${results.teamPayroll}M payroll, the team spends 
-          <span className={`font-bold mx-1 ${getCategoryColor(results.teamCategory)}`}>
-            ${results.costPerWAR}M per WAR
-          </span>
-          ({results.teamCategory}). 
-          Based on payroll, the team should produce {results.expectedWAR} WAR, making them {results.efficiency}x efficient. 
-          This projects to approximately {results.projectedWins} wins ({results.winPercentage}).
-        </p>
+        <div className="space-y-3 text-sm">
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Cost per WAR:</div>
+            <code className="text-white">
+              ${(results.playerSalary / 1000000).toFixed(1)}M ÷ {results.playerWAR} WAR = ${results.costPerWAR}M per WAR
+            </code>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Contract Efficiency:</div>
+            <code className="text-white">
+              ({results.playerWAR} WAR × $0.74M) ÷ ${(results.playerSalary / 1000000).toFixed(1)}M = {results.contractEfficiency}x
+            </code>
+            <div className="text-xs text-gray-500 mt-1">*Using league minimum ($740K) as baseline</div>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Surplus Value:</div>
+            <code className="text-white">
+              ({results.playerWAR} WAR × $8M) - ${(results.playerSalary / 1000000).toFixed(1)}M = ${results.surplusValue.toFixed(1)}M
+            </code>
+            <div className="text-xs text-gray-500 mt-1">*Market rate: $8M per WAR</div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default TeamResultsDisplay;
+export default ResultsDisplay;
