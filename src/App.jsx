@@ -3,6 +3,7 @@ import { Calculator, X, History, ExternalLink, Users, User } from 'lucide-react'
 import * as ContractWARComponents from './components/ContractWARComponents';
 import ResultsDisplay from './components/ResultsDisplay';
 import TeamResultsDisplay from './components/TeamResultsDisplay';
+import PoopConfetti from './components/PoopConfetti';
 import { 
   calculateContractMetrics,
   calculateTeamMetrics, 
@@ -27,6 +28,7 @@ const ContractWARCalculator = () => {
   const [errors, setErrors] = useState({ salary: '', war: '', teamPayroll: '', teamWAR: '' });
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     const { salary: urlSalary, war: urlWar } = loadFromURLParams();
@@ -56,6 +58,12 @@ const ContractWARCalculator = () => {
       results.mode = 'individual';
       
       setResults(results);
+
+      // Trigger confetti for poor value contracts
+      if (results.warValueCategory === 'Poor Value') {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 100);
+      }
       
       const newEntry = {
         ...results,
@@ -84,6 +92,12 @@ const ContractWARCalculator = () => {
       
       results.mode = 'team';
       setResults(results);
+
+      // Trigger confetti for inefficient teams
+      if (results.teamCategory === 'Inefficient') {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 100);
+      }
       
       const newEntry = {
         ...results,
@@ -469,6 +483,8 @@ const ContractWARCalculator = () => {
           <p className="mt-1">Market rate: ~$8M per WAR • League avg team: ~43 WAR</p>
         </div>
       </div>
+      
+      <PoopConfetti isActive={showConfetti} />
     </div>
   );
 };
