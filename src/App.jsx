@@ -1,220 +1,189 @@
-import React, { useState, useEffect } from 'react';
-import { Calculator, X, History } from 'lucide-react';
-import ModeSelector from './components/ModeSelector';
-import WARTypeSelector from './components/WARTypeSelector';
-import ExampleContracts from './components/ExampleContracts';
-import CalculatorForm from './components/CalculatorForm';
-import HistoryPanel from './components/HistoryPanel';
-import ResultsDisplay from './components/ResultsDisplay';
-import TeamResultsDisplay from './components/TeamResultsDisplay';
-import { useCalculatorHistory } from './hooks/useCalculatorHistory';
-import { useURLParams } from './hooks/useURLParams';
-import { 
-  calculateContractMetrics,
-  calculateTeamMetrics, 
-  validateInputs,
-  validateTeamInputs
-} from './utils/calculations';
-import { LEAGUE_DATA } from './utils/constants';
+import React from 'react';
+import { TrendingUp, TrendingDown, DollarSign, Activity, Award, Users } from 'lucide-react';
 
-const WARValueCalculator = () => {
-  const [mode, setMode] = useState('individual');
-  const [salary, setSalary] = useState('');
-  const [war, setWar] = useState('');
-  const [teamPayroll, setTeamPayroll] = useState('');
-  const [teamWAR, setTeamWAR] = useState('');
-  const [warType, setWarType] = useState('avg');
-  const [results, setResults] = useState(null);
-  const [errors, setErrors] = useState({ salary: '', war: '', teamPayroll: '', teamWAR: '' });
-  
-  const { history, showHistory, addToHistory, clearHistory, toggleHistory } = useCalculatorHistory();
-  const { loadFromURL } = useURLParams(salary, war);
-
-  // Load URL params on mount
-  useEffect(() => {
-    const { salary: urlSalary, war: urlWar } = loadFromURL();
-    if (urlSalary && urlWar) {
-      setSalary(urlSalary);
-      setWar(urlWar);
-    }
-  }, []);
-
-  const handleModeChange = (newMode) => {
-    setMode(newMode);
-    handleClear();
-  };
-
-  const handleExampleSelect = (example) => {
-    if (mode === 'individual') {
-      setSalary(example.salary);
-      setWar(example.war);
-    } else {
-      setTeamPayroll(example.payroll);
-      setTeamWAR(example.war);
+const TeamResultsDisplay = ({ results }) => {
+  const getCategoryColor = (category) => {
+    switch (category) {
+      case 'Elite Efficiency':
+        return 'text-purple-500';
+      case 'Above Average':
+        return 'text-green-500';
+      case 'Average':
+        return 'text-yellow-500';
+      case 'Below Average':
+      case 'Inefficient':
+        return 'text-red-500';
+      default:
+        return 'text-gray-500';
     }
   };
 
-  const handleCalculate = () => {
-    if (mode === 'individual') {
-      const validation = validateInputs(salary, war);
-      setErrors({ ...errors, ...validation.errors });
-      
-      if (!validation.isValid) return;
-      
-      const results = calculateContractMetrics(
-        parseFloat(salary), 
-        parseFloat(war), 
-        LEAGUE_DATA
-      );
-      
-      results.warType = warType;
-      results.mode = 'individual';
-      
-      setResults(results);
-      
-      addToHistory(results);
-    } else {
-      const validation = validateTeamInputs(teamPayroll, teamWAR);
-      setErrors({ ...errors, ...validation.errors });
-      
-      if (!validation.isValid) return;
-      
-      const results = calculateTeamMetrics(
-        parseFloat(teamPayroll), 
-        parseFloat(teamWAR), 
-        LEAGUE_DATA
-      );
-      
-      results.mode = 'team';
-      setResults(results);
-      
-      addToHistory(results);
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'Elite Efficiency':
+        return <Award className="w-5 h-5" />;
+      case 'Above Average':
+        return <TrendingUp className="w-5 h-5" />;
+      case 'Average':
+        return <Activity className="w-5 h-5" />;
+      case 'Below Average':
+      case 'Inefficient':
+        return <TrendingDown className="w-5 h-5" />;
+      default:
+        return <Users className="w-5 h-5" />;
     }
   };
 
-  const handleClear = () => {
-    setSalary('');
-    setWar('');
-    setTeamPayroll('');
-    setTeamWAR('');
-    setResults(null);
-    setErrors({ salary: '', war: '', teamPayroll: '', teamWAR: '' });
+  const getEfficiencyColor = (efficiency) => {
+    if (efficiency >= 1.5) return 'text-purple-500';
+    if (efficiency >= 1.2) return 'text-green-500';
+    if (efficiency >= 0.9) return 'text-yellow-500';
+    return 'text-red-500';
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
-              {/* Header */}
-        <div className="text-center mb-6 md:mb-8">
-          <div className="flex items-center justify-center gap-2 md:gap-3 mb-3 md:mb-4">
-            <Calculator className="w-6 h-6 md:w-8 md:h-8 text-red-500" />
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-wider">
-              WAR Value Calculator
-            </h1>
+    <div className="space-y-6">
+      {/* Primary Result */}
+      <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-6 border border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white uppercase tracking-wider">
+            Team Analysis
+          </h3>
+          <div className={`flex items-center gap-2 ${getCategoryColor(results.teamCategory)}`}>
+            {getCategoryIcon(results.teamCategory)}
+            <span className="font-medium">{results.teamCategory}</span>
           </div>
-          <p className="text-gray-400 text-base md:text-lg px-4">
-            Analyze MLB contracts from a performance vs. salary perspective
-          </p>
         </div>
-
-        {/* Mode Selector */}
-        <ModeSelector mode={mode} onModeChange={handleModeChange} />
-
-        {/* WAR Type Selector (Individual Mode Only) */}
-        {mode === 'individual' && (
-          <WARTypeSelector warType={warType} onWarTypeChange={setWarType} />
-        )}
-
-        {/* Example Contracts */}
-        <ExampleContracts mode={mode} onExampleSelect={handleExampleSelect} />
-
-        {/* Main Calculator Card */}
-        <div className="bg-gray-900 rounded-lg p-4 sm:p-6 md:p-8 shadow-2xl border border-gray-800">
-          {/* Calculator Form */}
-          <CalculatorForm
-            mode={mode}
-            salary={salary}
-            setSalary={setSalary}
-            war={war}
-            setWar={setWar}
-            teamPayroll={teamPayroll}
-            setTeamPayroll={setTeamPayroll}
-            teamWAR={teamWAR}
-            setTeamWAR={setTeamWAR}
-            warType={warType}
-            errors={errors}
-          />
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 sm:gap-3 mb-4 md:mb-6">
-            <button
-              onClick={handleCalculate}
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded font-medium transition-colors uppercase tracking-wider text-sm sm:text-base"
-            >
-              Calculate
-            </button>
-            <button
-              onClick={handleClear}
-              className="px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-800 hover:bg-gray-700 text-white rounded transition-colors"
-              aria-label="Clear form"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-            <button
-              onClick={toggleHistory}
-              className="px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-800 hover:bg-gray-700 text-white rounded transition-colors relative"
-              aria-label="Show history"
-            >
-              <History className="w-4 h-4 sm:w-5 sm:h-5" />
-              {history.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs">
-                  {history.length}
-                </span>
-              )}
-            </button>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Cost per WAR */}
+          <div className="text-center">
+            <div className="text-sm text-gray-400 uppercase tracking-wider mb-1">
+              Cost per WAR
+            </div>
+            <div className="text-3xl font-bold text-white">
+              ${results.costPerWAR}M
+            </div>
+            <div className="text-sm text-gray-500 mt-1">
+              League avg: $8.0M
+            </div>
           </div>
 
-          {/* History Panel */}
-          {showHistory && (
-            <HistoryPanel history={history} onClearHistory={clearHistory} />
-          )}
+          {/* Efficiency */}
+          <div className="text-center">
+            <div className="text-sm text-gray-400 uppercase tracking-wider mb-1">
+              Efficiency Rating
+            </div>
+            <div className={`text-3xl font-bold ${getEfficiencyColor(results.efficiency)}`}>
+              {results.efficiency}x
+            </div>
+            <div className="text-sm text-gray-500 mt-1">
+              vs. expected WAR
+            </div>
+          </div>
 
-          {/* Results Display */}
-          {results && (
-            results.mode === 'individual' ? 
-              <ResultsDisplay results={results} /> : 
-              <TeamResultsDisplay results={results} />
-          )}
+          {/* Projected Wins */}
+          <div className="text-center">
+            <div className="text-sm text-gray-400 uppercase tracking-wider mb-1">
+              Full Season Pace
+            </div>
+            <div className="text-3xl font-bold text-white">
+              {results.projectedWins} wins
+            </div>
+            <div className="text-sm text-gray-500 mt-1">
+              {results.winPercentage} W%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gray-800 rounded p-4 border border-gray-700">
+          <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+            Current WAR
+          </div>
+          <div className="text-xl font-bold text-white">
+            {results.teamWAR}
+          </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="text-center mt-6 md:mt-8 text-gray-500 text-xs sm:text-sm">
-          <p>League averages based on 2024 MLB data</p>
-          <p className="mt-1">
-            Market rate: ~${LEAGUE_DATA.marketRatePerWAR / 1000000}M per WAR • 
-            League avg team: ~{LEAGUE_DATA.avgTeamWAR} WAR
-          </p>
-          <div className="mt-3 pt-3 border-t border-gray-800">
-            <p>
-              Visit us at{' '}
-              <a 
-                href="https://baddersports.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-red-500 hover:text-red-400 transition-colors"
-              >
-                BadderSports.com
-              </a>
-              {' '}• Check out the show -{' '}
-              <a 
-                href="https://www.youtube.com/channel/UCvkFXHG5mZyQfsmmf7aU5lQ" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-red-500 hover:text-red-400 transition-colors"
-              >
-                @swingbadderpodcast
-              </a>
-            </p>
+        <div className="bg-gray-800 rounded p-4 border border-gray-700">
+          <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+            {results.payrollType === 'active' ? 'Active' : 'Total'} Payroll
+          </div>
+          <div className="text-xl font-bold text-white">
+            ${results.teamPayroll}M
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded p-4 border border-gray-700">
+          <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+            Expected WAR
+          </div>
+          <div className="text-xl font-bold text-white">
+            {results.expectedWAR}
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded p-4 border border-gray-700">
+          <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+            Surplus Value
+          </div>
+          <div className={`text-xl font-bold ${results.surplusValue >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            ${Math.abs(results.surplusValue).toFixed(1)}M
+          </div>
+        </div>
+      </div>
+
+      {/* Analysis Summary with Formulas */}
+      <div className="bg-gray-800 rounded p-4 border border-gray-700">
+        <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
+          Calculation Breakdown
+        </h4>
+        <div className="space-y-3 text-sm">
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Cost per WAR:</div>
+            <code className="text-white">
+              ${results.teamPayroll}M ÷ {results.teamWAR} WAR = ${results.costPerWAR}M per WAR
+            </code>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Expected WAR (at market rate):</div>
+            <code className="text-white">
+              ${results.teamPayroll}M ÷ $8M per WAR = {results.expectedWAR} WAR
+            </code>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Efficiency Rating:</div>
+            <code className="text-white">
+              {results.teamWAR} WAR ÷ {results.expectedWAR} expected WAR = {results.efficiency}x
+            </code>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Full Season Projected WAR:</div>
+            <code className="text-white">
+              {results.teamWAR} WAR × (162 games ÷ current games) = {results.projectedFullSeasonWAR} WAR
+            </code>
+            <div className="text-xs text-gray-500 mt-1">*Based on current pace</div>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Projected Wins (162 games):</div>
+            <code className="text-white">
+              ({results.projectedFullSeasonWAR} WAR ÷ 43 WAR) × 81 wins = {results.projectedWins} wins
+            </code>
+            <div className="text-xs text-gray-500 mt-1">*.500 team = 43 WAR baseline</div>
+          </div>
+          
+          <div className="p-3 bg-gray-900 rounded">
+            <div className="text-gray-400 mb-1">Surplus Value:</div>
+            <code className="text-white">
+              ({results.teamWAR} WAR × $8M) - ${results.teamPayroll}M = ${results.surplusValue.toFixed(1)}M
+            </code>
           </div>
         </div>
       </div>
@@ -222,4 +191,4 @@ const WARValueCalculator = () => {
   );
 };
 
-export default WARValueCalculator;
+export default TeamResultsDisplay;
