@@ -163,11 +163,11 @@ const ContractWARCalculator = () => {
               <div className="text-gray-400 text-xs">Gooden '85</div>
             </button>
             <button
-              onClick={() => { setSalary('3.0'); setWar('9.1'); }}
+              onClick={() => { setSalary('15'); setWar('3.5'); }}
               className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-xs sm:text-sm transition-colors"
             >
               <div className="text-green-500 font-semibold">High Value</div>
-              <div className="text-gray-400 text-xs">Ohtani '21</div>
+              <div className="text-gray-400 text-xs">Freeman '20</div>
             </button>
             <button
               onClick={() => { setSalary('29.6'); setWar('3.5'); }}
