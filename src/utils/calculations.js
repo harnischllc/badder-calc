@@ -145,3 +145,188 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
   else if (contractEfficiency >= 1.0) percentileRank = 60;
   else if (contractEfficiency >= 0.5) percentileRank = 30;
   else percentileRank = 10;
+  
+  // Calculate positional value if position is provided
+  let positionalData = null;
+  if (position && POSITION_DATA[position]) {
+    positionalData = calculatePositionalValue(salaryInMillions, playerWAR, position, 'WAR');
+  }
+  
+  return {
+    playerSalary,
+    playerWAR,
+    costPerWAR: isFinite(costPerWAR) ? costPerWAR : 'N/A',
+    contractEfficiency,
+    surplusValue,
+    marketValue,
+    warValueCategory,
+    percentileRank,
+    leagueAvgPerWAR: marketRatePerWAR / 1000000,
+    positionalData
+  };
+};
+
+// Calculate positional value
+export const calculatePositionalValue = (salary, performance, position, metric = 'WAR') => {
+  const posData = POSITION_DATA[position];
+  if (!posData) return null;
+
+  const salaryRatio = salary / posData.avgSalary;
+  const performanceRatio = metric === 'WAR' 
+    ? performance / posData.avgWAR
+    : performance / posData.avgWRCplus;
+
+  // Positional Value Score: Performance relative to position avg vs Salary relative to position avg
+  const positionalValueScore = (performanceRatio / salaryRatio) * 100;
+
+  return {
+    position,
+    positionalValueScore: parseFloat(positionalValueScore.toFixed(1)),
+    salaryVsPositionAvg: ((salary / posData.avgSalary - 1) * 100).toFixed(1),
+    performanceVsPositionAvg: ((performanceRatio - 1) * 100).toFixed(1),
+    positionAvgSalary: posData.avgSalary,
+    positionAvgPerformance: metric === 'WAR' ? posData.avgWAR : posData.avgWRCplus
+  };
+};
+
+// For wRC+ specific calculations
+export const calculateWRCPlusValue = (salaryInMillions, wrcPlus, position = null) => {
+  // wRC+ where 100 = average
+  // Each point above 100 is 1% better than average
+  const performanceAboveAverage = (wrcPlus - 100) / 100;
+  
+  // Rough estimate: 1 WAR ≈ 10 wRC+ points above average for full-time player
+  const estimatedWAR = performanceAboveAverage * 10;
+  
+  // Value calculations
+  const marketValue = estimatedWAR * 8; // $8M per WAR
+  const surplusValue = marketValue - salaryInMillions;
+  const efficiencyRating = wrcPlus / 100; // Simple efficiency vs average
+  
+  // Calculate positional value if position is provided
+  let positionalData = null;
+  if (position && POSITION_DATA[position] && POSITION_DATA[position].avgWRCplus) {
+    positionalData = calculatePositionalValue(salaryInMillions, wrcPlus, position, 'wRC+');
+  }
+  
+  return {
+    wrcPlus,
+    playerSalary: salaryInMillions * 1000000,
+    salaryInMillions,
+    performanceAboveAverage: (performanceAboveAverage * 100).toFixed(1),
+    estimatedWAR: estimatedWAR.toFixed(1),
+    marketValue: marketValue.toFixed(1),
+    surplusValue: surplusValue.toFixed(1),
+    efficiencyRating: efficiencyRating.toFixed(2),
+    category: getWRCPlusCategory(wrcPlus, salaryInMillions),
+    positionalData
+  };
+};
+
+const getWRCPlusCategory = (wrcPlus, salary) => {
+  const valueRatio = wrcPlus / salary; // Simple ratio for categorization
+  
+  if (wrcPlus >= 140 && salary < 10) return 'Elite Bargain';
+  if (wrcPlus >= 120 && valueRatio > 10) return 'High Value';
+  if (wrcPlus >= 100 && valueRatio > 5) return 'Good Value';
+  if (wrcPlus >= 90) return 'Average Value';
+  return 'Poor Value';
+};
+
+// Validate individual player inputs
+export const validateInputs = (salary, war) => {
+  const errors = { salary: '', war: '' };
+  let isValid = true;
+  
+  if (!salary || parseFloat(salary) <= 0) {
+    errors.salary = 'Please enter a valid salary greater than 0';
+    isValid = false;
+  }
+  
+  if (war === '' || war === null || war === undefined) {
+    errors.war = 'Please enter a WAR value';
+    isValid = false;
+  }
+  
+  if (parseFloat(war) < -5) {
+    errors.war = 'WAR seems unusually low. Please verify.';
+    isValid = false;
+  }
+  
+  if (parseFloat(war) > 15) {
+    errors.war = 'WAR seems unusually high. Please verify.';
+    isValid = false;
+  }
+  
+  return { errors, isValid };
+};
+
+// Validate wRC+ inputs
+export const validateWRCPlusInputs = (salary, wrcPlus) => {
+  const errors = { salary: '', wrcPlus: '' };
+  let isValid = true;
+  
+  if (!salary || parseFloat(salary) <= 0) {
+    errors.salary = 'Please enter a valid salary greater than 0';
+    isValid = false;
+  }
+  
+  if (!wrcPlus || parseFloat(wrcPlus) < 0) {
+    errors.wrcPlus = 'Please enter a valid wRC+ value';
+    isValid = false;
+  }
+  
+  if (parseFloat(wrcPlus) > 250) {
+    errors.wrcPlus = 'wRC+ seems unusually high. Please verify.';
+    isValid = false;
+  }
+  
+  return { errors, isValid };
+};
+
+// URL parameter functions
+export const updateURLParams = (salary, war) => {
+  const params = new URLSearchParams();
+  if (salary) params.set('salary', salary);
+  if (war) params.set('war', war);
+  
+  const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+  window.history.replaceState({}, '', newURL);
+};
+
+export const loadFromURLParams = () => {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    salary: params.get('salary') || '',
+    war: params.get('war') || ''
+  };
+};
+
+// History functions
+const HISTORY_KEY = 'contractWARHistory';
+
+export const saveHistory = (history) => {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error('Failed to save history:', e);
+  }
+};
+
+export const loadHistory = () => {
+  try {
+    const saved = localStorage.getItem(HISTORY_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    console.error('Failed to load history:', e);
+    return [];
+  }
+};
+
+export const clearHistory = () => {
+  try {
+    localStorage.removeItem(HISTORY_KEY);
+  } catch (e) {
+    console.error('Failed to clear history:', e);
+  }
+};
