@@ -2,18 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Calculator, X, History } from 'lucide-react';
 import ModeSelector from './components/ModeSelector';
 import WARTypeSelector from './components/WARTypeSelector';
+import PositionSelector from './components/PositionSelector';
 import ExampleContracts from './components/ExampleContracts';
 import CalculatorForm from './components/CalculatorForm';
 import HistoryPanel from './components/HistoryPanel';
 import ResultsDisplay from './components/ResultsDisplay';
 import TeamResultsDisplay from './components/TeamResultsDisplay';
+import WRCPlusResultsDisplay from './components/WRCPlusResultsDisplay';
 import { useCalculatorHistory } from './hooks/useCalculatorHistory';
 import { useURLParams } from './hooks/useURLParams';
 import { 
   calculateContractMetrics,
-  calculateTeamMetrics, 
+  calculateTeamMetrics,
+  calculateWRCPlusValue,
   validateInputs,
-  validateTeamInputs
+  validateTeamInputs,
+  validateWRCPlusInputs
 } from './utils/calculations';
 import { LEAGUE_DATA } from './utils/constants';
 
@@ -21,12 +25,14 @@ const WARValueCalculator = () => {
   const [mode, setMode] = useState('individual');
   const [salary, setSalary] = useState('');
   const [war, setWar] = useState('');
+  const [wrcPlus, setWrcPlus] = useState('');
+  const [position, setPosition] = useState('');
   const [teamPayroll, setTeamPayroll] = useState('');
   const [teamWAR, setTeamWAR] = useState('');
   const [warType, setWarType] = useState('avg');
   const [payrollType, setPayrollType] = useState('total');
   const [results, setResults] = useState(null);
-  const [errors, setErrors] = useState({ salary: '', war: '', teamPayroll: '', teamWAR: '' });
+  const [errors, setErrors] = useState({ salary: '', war: '', wrcPlus: '', teamPayroll: '', teamWAR: '' });
   
   const { history, showHistory, addToHistory, clearHistory, toggleHistory } = useCalculatorHistory();
   const { loadFromURL } = useURLParams(salary, war);
@@ -49,6 +55,11 @@ const WARValueCalculator = () => {
     if (mode === 'individual') {
       setSalary(example.salary);
       setWar(example.war);
+      setPosition(example.position || '');
+    } else if (mode === 'wrcplus') {
+      setSalary(example.salary);
+      setWrcPlus(example.wrcPlus);
+      setPosition(example.position || '');
     } else {
       setTeamPayroll(example.payroll);
       setTeamWAR(example.war);
@@ -65,15 +76,39 @@ const WARValueCalculator = () => {
       const results = calculateContractMetrics(
         parseFloat(salary), 
         parseFloat(war), 
-        LEAGUE_DATA
+        LEAGUE_DATA,
+        position
       );
       
       results.warType = warType;
       results.mode = 'individual';
+      results.position = position;
       
       setResults(results);
-      
       addToHistory(results);
+    } else if (mode === 'wrcplus') {
+      const validation = validateWRCPlusInputs(salary, wrcPlus);
+      setErrors({ ...errors, ...validation.errors });
+      
+      if (!validation.isValid) return;
+      
+      const results = calculateWRCPlusValue(
+        parseFloat(salary),
+        parseFloat(wrcPlus),
+        position
+      );
+      
+      results.mode = 'wrcplus';
+      results.position = position;
+      
+      setResults(results);
+      addToHistory({
+        ...results,
+        name: `${wrcPlus} wRC+ @ $${parseFloat(salary).toFixed(1)}M`,
+        date: new Date().toLocaleDateString(),
+        costPerWAR: 'N/A',
+        category: results.category
+      });
     } else {
       const validation = validateTeamInputs(teamPayroll, teamWAR);
       setErrors({ ...errors, ...validation.errors });
@@ -97,10 +132,12 @@ const WARValueCalculator = () => {
   const handleClear = () => {
     setSalary('');
     setWar('');
+    setWrcPlus('');
+    setPosition('');
     setTeamPayroll('');
     setTeamWAR('');
     setResults(null);
-    setErrors({ salary: '', war: '', teamPayroll: '', teamWAR: '' });
+    setErrors({ salary: '', war: '', wrcPlus: '', teamPayroll: '', teamWAR: '' });
   };
 
   return (
@@ -127,6 +164,11 @@ const WARValueCalculator = () => {
           <WARTypeSelector warType={warType} onWarTypeChange={setWarType} />
         )}
 
+        {/* Position Selector (Individual and wRC+ modes) */}
+        {(mode === 'individual' || mode === 'wrcplus') && (
+          <PositionSelector position={position} onPositionChange={setPosition} />
+        )}
+
         {/* Example Contracts */}
         <ExampleContracts mode={mode} onExampleSelect={handleExampleSelect} />
 
@@ -139,6 +181,8 @@ const WARValueCalculator = () => {
             setSalary={setSalary}
             war={war}
             setWar={setWar}
+            wrcPlus={wrcPlus}
+            setWrcPlus={setWrcPlus}
             teamPayroll={teamPayroll}
             setTeamPayroll={setTeamPayroll}
             teamWAR={teamWAR}
@@ -187,6 +231,8 @@ const WARValueCalculator = () => {
           {results && (
             results.mode === 'individual' ? 
               <ResultsDisplay results={results} /> : 
+            results.mode === 'wrcplus' ?
+              <WRCPlusResultsDisplay results={results} /> :
               <TeamResultsDisplay results={results} />
           )}
         </div>
@@ -196,10 +242,11 @@ const WARValueCalculator = () => {
           <p>League averages based on 2024 MLB data</p>
           <p className="mt-1">
             Market rate: ~${LEAGUE_DATA.marketRatePerWAR / 1000000}M per WAR • 
-            League avg team: ~{LEAGUE_DATA.avgTeamWAR} WAR
+            League avg team: ~{LEAGUE_DATA.avgTeamWAR} WAR • 
+            League avg wRC+: 100
           </p>
           <p className="mt-2 text-gray-600 italic">
-            Note: Mid-season WAR projections are based on current pace
+            Note: Mid-season projections are based on current pace
           </p>
           <div className="mt-3 pt-3 border-t border-gray-800">
             <p>
