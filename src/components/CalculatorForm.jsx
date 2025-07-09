@@ -144,4 +144,62 @@ const CalculatorForm = ({
               type="radio"
               value="active"
               checked={payrollType === 'active'}
-              onChange={(e) => setPayrollType(e
+              onChange={(e) => setPayrollType(e.target.value)}
+              className="mr-2 text-red-500"
+            />
+            <span className="text-white">Active Payroll</span>
+          </label>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          {payrollType === 'total' 
+            ? 'Includes injured list and retained salary'
+            : 'Only players on active roster'}
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <InputField
+            label={`${payrollType === 'total' ? 'Total' : 'Active'} Payroll ($M)`}
+            value={teamPayroll}
+            onChange={(e) => setTeamPayroll(e.target.value)}
+            placeholder="e.g., 150"
+            error={errors.teamPayroll}
+            tooltip={`Enter the team's ${payrollType} payroll in millions`}
+          />
+          
+          <a href="https://www.spotrac.com/mlb/payroll/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Team payrolls on Spotrac
+          </a>
+        </div>
+        
+        <div>
+          <InputField
+            label="Team WAR (Current Season)"
+            value={teamWAR}
+            onChange={(e) => setTeamWAR(e.target.value)}
+            placeholder="e.g., 45"
+            error={errors.teamWAR}
+            tooltip="Combined WAR for all players to date"
+          />
+          
+          <a href="https://www.fangraphs.com/depthcharts.aspx?position=Team"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Team WAR on FanGraphs
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CalculatorForm;
