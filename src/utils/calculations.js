@@ -1,5 +1,20 @@
 import { LEAGUE_DATA } from './constants';
 
+// Position data for calculations
+const POSITION_DATA = {
+  'C': { avgSalary: 3.2, avgWAR: 1.8, avgWRCplus: 95 },
+  '1B': { avgSalary: 8.5, avgWAR: 2.1, avgWRCplus: 110 },
+  '2B': { avgSalary: 5.8, avgWAR: 2.3, avgWRCplus: 98 },
+  '3B': { avgSalary: 7.2, avgWAR: 2.4, avgWRCplus: 105 },
+  'SS': { avgSalary: 7.8, avgWAR: 2.5, avgWRCplus: 100 },
+  'LF': { avgSalary: 6.5, avgWAR: 1.9, avgWRCplus: 106 },
+  'CF': { avgSalary: 7.1, avgWAR: 2.2, avgWRCplus: 102 },
+  'RF': { avgSalary: 6.8, avgWAR: 2.0, avgWRCplus: 108 },
+  'DH': { avgSalary: 9.2, avgWAR: 1.5, avgWRCplus: 115 },
+  'SP': { avgSalary: 8.9, avgWAR: 2.8, avgWRCplus: null },
+  'RP': { avgSalary: 3.1, avgWAR: 0.9, avgWRCplus: null }
+};
+
 // Team calculation functions
 export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData, gamesPlayed = 162) => {
   const teamPayroll = payrollInMillions * 1000000;
@@ -94,7 +109,7 @@ export const validateTeamInputs = (payroll, war) => {
 };
 
 // Individual player calculations
-export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData) => {
+export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData, position = null) => {
   const playerSalary = salaryInMillions * 1000000;
   const marketRatePerWAR = LEAGUE_DATA.marketRatePerWAR;
   
@@ -130,91 +145,3 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
   else if (contractEfficiency >= 1.0) percentileRank = 60;
   else if (contractEfficiency >= 0.5) percentileRank = 30;
   else percentileRank = 10;
-  
-  return {
-    playerSalary,
-    playerWAR,
-    costPerWAR: isFinite(costPerWAR) ? costPerWAR : 'N/A',
-    contractEfficiency,
-    surplusValue,
-    marketValue,
-    warValueCategory,
-    percentileRank,
-    leagueAvgPerWAR: marketRatePerWAR / 1000000
-  };
-};
-
-// Validate individual player inputs
-export const validateInputs = (salary, war) => {
-  const errors = { salary: '', war: '' };
-  let isValid = true;
-  
-  if (!salary || parseFloat(salary) <= 0) {
-    errors.salary = 'Please enter a valid salary greater than 0';
-    isValid = false;
-  }
-  
-  if (war === '' || war === null || war === undefined) {
-    errors.war = 'Please enter a WAR value';
-    isValid = false;
-  }
-  
-  if (parseFloat(war) < -5) {
-    errors.war = 'WAR seems unusually low. Please verify.';
-    isValid = false;
-  }
-  
-  if (parseFloat(war) > 15) {
-    errors.war = 'WAR seems unusually high. Please verify.';
-    isValid = false;
-  }
-  
-  return { errors, isValid };
-};
-
-// URL parameter functions
-export const updateURLParams = (salary, war) => {
-  const params = new URLSearchParams();
-  if (salary) params.set('salary', salary);
-  if (war) params.set('war', war);
-  
-  const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-  window.history.replaceState({}, '', newURL);
-};
-
-export const loadFromURLParams = () => {
-  const params = new URLSearchParams(window.location.search);
-  return {
-    salary: params.get('salary') || '',
-    war: params.get('war') || ''
-  };
-};
-
-// History functions
-const HISTORY_KEY = 'contractWARHistory';
-
-export const saveHistory = (history) => {
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  } catch (e) {
-    console.error('Failed to save history:', e);
-  }
-};
-
-export const loadHistory = () => {
-  try {
-    const saved = localStorage.getItem(HISTORY_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch (e) {
-    console.error('Failed to load history:', e);
-    return [];
-  }
-};
-
-export const clearHistory = () => {
-  try {
-    localStorage.removeItem(HISTORY_KEY);
-  } catch (e) {
-    console.error('Failed to clear history:', e);
-  }
-};
