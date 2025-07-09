@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, User } from 'lucide-react';
+import { Users, User, TrendingUp } from 'lucide-react';
 
 const ModeSelector = ({ mode, onModeChange }) => {
   return (
@@ -16,7 +16,18 @@ const ModeSelector = ({ mode, onModeChange }) => {
             }`}
           >
             <User className="w-4 h-4" />
-            Individual Player
+            WAR Value
+          </button>
+          <button
+            onClick={() => onModeChange('wrcplus')}
+            className={`px-3 py-1.5 md:px-4 md:py-2 rounded text-sm transition-colors flex items-center gap-2 ${
+              mode === 'wrcplus' 
+                ? 'bg-red-600 text-white' 
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            wRC+ Value
           </button>
           <button
             onClick={() => onModeChange('team')}
