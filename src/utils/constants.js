@@ -1,3 +1,6 @@
+// © 2024–2025 Harnisch LLC. All rights reserved.
+// Developed in partnership with BadderSports and SwingBadder.
+// Unauthorized commercial use or branding is prohibited.
 // Default MLB data - based on 2024 market rates
 export const LEAGUE_DATA = {
   avgWAR: 2.0,
