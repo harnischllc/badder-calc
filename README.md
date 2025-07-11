@@ -64,24 +64,20 @@ Please report bugs or suggestions via:
 - Trade value calculator
 - Expansion to NBA/NFL/NHL
 
-## Development
-
-**Note**: This project uses GitHub web UI. Provide copy-paste solutions for contributions.
-
 ```bash
 # Local setup
 git clone https://github.com/harnischllc/badder-calc.git
 cd badder-calc
 npm install
 npm run dev
-```
 
-## Disclaimer
-
+Ownership & Use
+This project is developed by Harnisch LLC in partnership with the BadderSports network, including SwingBadder.
+All code is © 2024–2025 Harnisch LLC. All rights reserved.
+The project is open for public viewing and educational use, but all rights to commercial use, resale, branding, and derivative works remain with Harnisch LLC and BadderSports. Unauthorized use of the SwingBadder or BadderSports names or likenesses is prohibited.
+For licensing, contact: eric@ericharnisch.com
+Disclaimer
 This is a beta tool for entertainment and analysis purposes. Calculations are estimates based on publicly available data and simplified models.
 
----
-
-Created for [BadderSports.com](https://baddersports.com) | [@swingbadderpodcast](https://www.youtube.com/channel/UCvkFXHG5mZyQfsmmf7aU5lQ)
-
-**Version**: 0.3.0-beta | Last Updated: July 2025
+Created for BadderSports.com | @swingbadderpodcast
+Version: 0.3.0-beta | Last Updated: July 2025
