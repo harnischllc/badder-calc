@@ -1,3 +1,6 @@
+// © 2024–2025 Harnisch LLC. All rights reserved.
+// Developed in partnership with BadderSports and SwingBadder.
+// Unauthorized commercial use or branding is prohibited.
 import { LEAGUE_DATA } from './constants';
 
 // Position data for calculations
