@@ -1,3 +1,6 @@
+// © 2024–2025 Harnisch LLC. All rights reserved.
+// Developed in partnership with BadderSports and SwingBadder.
+// Unauthorized commercial use or branding is prohibited.
 import React from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Activity, Award, AlertCircle } from 'lucide-react';
 
