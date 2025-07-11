@@ -1,3 +1,7 @@
+// © 2024–2025 Harnisch LLC. All rights reserved.
+// Developed in partnership with BadderSports and SwingBadder.
+// Unauthorized commercial use or branding is prohibited.
+
 import React, { useState, useEffect } from 'react';
 import { Calculator, X, History } from 'lucide-react';
 import ModeSelector from './components/ModeSelector';
