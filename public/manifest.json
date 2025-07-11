@@ -1,6 +1,6 @@
 {
-  "name": "MLB Contract WAR Calculator - BadderSports",
-  "short_name": "WAR Calculator",
+  "name": "BadderCalc - MLB Contract WAR Calculator",
+  "short_name": "BadderCalc",
   "description": "Analyze MLB player contracts and team payrolls from a performance vs. salary perspective",
   "start_url": "/",
   "scope": "/",
