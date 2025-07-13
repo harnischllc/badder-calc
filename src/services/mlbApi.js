@@ -3,7 +3,7 @@
 
 // Use CORS proxy for browser compatibility
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-const MLB_BASE_URL = CORS_PROXY + encodeURIComponent('https://statsapi.mlb.com/api/v1');
+const MLB_BASE_URL = 'https://statsapi.mlb.com/api/v1';
 
 class MLBApiService {
   constructor() {
@@ -35,19 +35,24 @@ class MLBApiService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${this.baseUrl}/teams?season=${season}`);
+      const url = `${this.baseUrl}/teams?season=${season}`;
+      const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
+      const response = await fetch(proxiedUrl);
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Non-OK response:', response.status, text);
+        throw new Error(`API error: ${response.status}`);
+      }
       const data = await response.json();
-      
       // Filter for MLB teams only
       const mlbTeams = data.teams.filter(team => 
         team.sport.id === 1 && team.active
       );
-      
       this.setCachedData(cacheKey, mlbTeams);
       return mlbTeams;
     } catch (error) {
-      console.error('Error fetching teams:', error);
-      throw error;
+      console.error('getTeams error:', error);
+      throw new Error(`Teams fetch failed: ${error.message}`);
     }
   }
 
@@ -59,7 +64,8 @@ class MLBApiService {
 
     try {
       const url = `${this.baseUrl}/people?search=${encodeURIComponent(query)}&limit=${limit}`;
-      const response = await fetch(url);
+      const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
+      const response = await fetch(proxiedUrl);
       console.log('searchPlayers response:', response);
       if (!response.ok) {
         const text = await response.text();
@@ -72,7 +78,6 @@ class MLBApiService {
       const activePlayers = data.people.filter(person => 
         person.active && person.isPlayer
       );
-      
       this.setCachedData(cacheKey, activePlayers);
       return activePlayers;
     } catch (error) {
@@ -88,16 +93,20 @@ class MLBApiService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(
-        `${this.baseUrl}/people/${playerId}/stats?stats=season&season=${season}&group=${group}`
-      );
+      const url = `${this.baseUrl}/people/${playerId}/stats?stats=season&season=${season}&group=${group}`;
+      const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
+      const response = await fetch(proxiedUrl);
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Non-OK response:', response.status, text);
+        throw new Error(`API error: ${response.status}`);
+      }
       const data = await response.json();
-      
       this.setCachedData(cacheKey, data);
       return data;
     } catch (error) {
-      console.error('Error fetching player stats:', error);
-      throw error;
+      console.error('getPlayerStats error:', error);
+      throw new Error(`Player stats fetch failed: ${error.message}`);
     }
   }
 
@@ -108,14 +117,20 @@ class MLBApiService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${this.baseUrl}/people/${playerId}`);
+      const url = `${this.baseUrl}/people/${playerId}`;
+      const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
+      const response = await fetch(proxiedUrl);
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Non-OK response:', response.status, text);
+        throw new Error(`API error: ${response.status}`);
+      }
       const data = await response.json();
-      
       this.setCachedData(cacheKey, data);
       return data;
     } catch (error) {
-      console.error('Error fetching player info:', error);
-      throw error;
+      console.error('getPlayerInfo error:', error);
+      throw new Error(`Player info fetch failed: ${error.message}`);
     }
   }
 
@@ -126,14 +141,20 @@ class MLBApiService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${this.baseUrl}/teams/${teamId}/roster?season=${season}`);
+      const url = `${this.baseUrl}/teams/${teamId}/roster?season=${season}`;
+      const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
+      const response = await fetch(proxiedUrl);
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Non-OK response:', response.status, text);
+        throw new Error(`API error: ${response.status}`);
+      }
       const data = await response.json();
-      
       this.setCachedData(cacheKey, data);
       return data;
     } catch (error) {
-      console.error('Error fetching team roster:', error);
-      throw error;
+      console.error('getTeamRoster error:', error);
+      throw new Error(`Team roster fetch failed: ${error.message}`);
     }
   }
 
