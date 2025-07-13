@@ -1,7 +1,9 @@
 // © 2024–2025 Harnisch LLC. All rights reserved.
 // MLB API Service for fetching player and team data
 
-const MLB_BASE_URL = 'https://statsapi.mlb.com/api/v1';
+// Use CORS proxy for browser compatibility
+const CORS_PROXY = 'https://corsproxy.io/?';
+const MLB_BASE_URL = CORS_PROXY + 'https://statsapi.mlb.com/api/v1';
 
 class MLBApiService {
   constructor() {
