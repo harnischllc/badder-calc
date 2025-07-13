@@ -159,23 +159,7 @@ const WARValueCalculator = () => {
       {/* Main App */}
       {window.location.pathname !== '/admin' && (
         <>
-          {/* Header */}
-          <header className="bg-gray-800 border-b border-gray-700">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center py-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-white">MLB Contract WAR Calculator</h1>
-                  <p className="text-gray-400">Calculate player value and team efficiency</p>
-                </div>
-                <a
-                  href="/admin"
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
-                >
-                  Admin Dashboard
-                </a>
-              </div>
-            </div>
-          </header>
+          {/* Header removed as requested */}
           <div className="max-w-3xl mx-auto">
             {/* Header */}
             <div className="text-center mb-6 md:mb-8">
