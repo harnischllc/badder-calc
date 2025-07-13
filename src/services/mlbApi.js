@@ -43,9 +43,10 @@ class MLBApiService {
         console.error('Non-OK response:', response.status, text);
         throw new Error(`API error: ${response.status}`);
       }
-      const data = await response.json();
+      const proxyData = await response.json();
+      const data = JSON.parse(proxyData.contents);
       // Filter for MLB teams only
-      const mlbTeams = data.teams.filter(team => 
+      const mlbTeams = (data.teams || []).filter(team => 
         team.sport.id === 1 && team.active
       );
       this.setCachedData(cacheKey, mlbTeams);
@@ -66,16 +67,24 @@ class MLBApiService {
       const url = `${this.baseUrl}/people?search=${encodeURIComponent(query)}&limit=${limit}`;
       const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
       const response = await fetch(proxiedUrl);
-      console.log('searchPlayers response:', response);
       if (!response.ok) {
         const text = await response.text();
         console.error('Non-OK response:', response.status, text);
         throw new Error(`API error: ${response.status}`);
       }
-      const data = await response.json();
-      console.log('searchPlayers data:', data);
+      const proxyData = await response.json();
+      let data;
+      try {
+        data = JSON.parse(proxyData.contents);
+      } catch (parseErr) {
+        console.error('Failed to parse proxy contents:', proxyData.contents);
+        throw new Error('Invalid proxy response');
+      }
+      console.log('searchPlayers MLB data:', data);
+      // Defensive: if no people array, return empty
+      const people = Array.isArray(data.people) ? data.people : [];
       // Filter for active MLB players
-      const activePlayers = data.people.filter(person => 
+      const activePlayers = people.filter(person => 
         person.active && person.isPlayer
       );
       this.setCachedData(cacheKey, activePlayers);
@@ -101,7 +110,14 @@ class MLBApiService {
         console.error('Non-OK response:', response.status, text);
         throw new Error(`API error: ${response.status}`);
       }
-      const data = await response.json();
+      const proxyData = await response.json();
+      let data;
+      try {
+        data = JSON.parse(proxyData.contents);
+      } catch (parseErr) {
+        console.error('Failed to parse proxy contents:', proxyData.contents);
+        throw new Error('Invalid proxy response');
+      }
       this.setCachedData(cacheKey, data);
       return data;
     } catch (error) {
@@ -125,7 +141,14 @@ class MLBApiService {
         console.error('Non-OK response:', response.status, text);
         throw new Error(`API error: ${response.status}`);
       }
-      const data = await response.json();
+      const proxyData = await response.json();
+      let data;
+      try {
+        data = JSON.parse(proxyData.contents);
+      } catch (parseErr) {
+        console.error('Failed to parse proxy contents:', proxyData.contents);
+        throw new Error('Invalid proxy response');
+      }
       this.setCachedData(cacheKey, data);
       return data;
     } catch (error) {
@@ -149,7 +172,14 @@ class MLBApiService {
         console.error('Non-OK response:', response.status, text);
         throw new Error(`API error: ${response.status}`);
       }
-      const data = await response.json();
+      const proxyData = await response.json();
+      let data;
+      try {
+        data = JSON.parse(proxyData.contents);
+      } catch (parseErr) {
+        console.error('Failed to parse proxy contents:', proxyData.contents);
+        throw new Error('Invalid proxy response');
+      }
       this.setCachedData(cacheKey, data);
       return data;
     } catch (error) {
