@@ -1,7 +1,7 @@
 // © 2024–2025 Harnisch LLC. All rights reserved.
 // Player Data Service for fetching data from local backend API
 
-const BACKEND_BASE_URL = 'http://localhost:4000/api';
+const BACKEND_BASE_URL = 'https://badder-calc-backend.onrender.com/api';
 
 class PlayerDataService {
   constructor() {
