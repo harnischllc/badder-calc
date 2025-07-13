@@ -2,8 +2,8 @@
 // MLB API Service for fetching player and team data
 
 // Use CORS proxy for browser compatibility
-const CORS_PROXY = 'https://corsproxy.io/?';
-const MLB_BASE_URL = CORS_PROXY + 'https://statsapi.mlb.com/api/v1';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+const MLB_BASE_URL = CORS_PROXY + encodeURIComponent('https://statsapi.mlb.com/api/v1');
 
 class MLBApiService {
   constructor() {
