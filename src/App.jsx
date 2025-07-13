@@ -9,6 +9,7 @@ import WARTypeSelector from './components/WARTypeSelector';
 import PositionSelector from './components/PositionSelector';
 import ExampleContracts from './components/ExampleContracts';
 import CalculatorForm from './components/CalculatorForm';
+import EnhancedCalculatorForm from './components/EnhancedCalculatorForm';
 import HistoryPanel from './components/HistoryPanel';
 import ResultsDisplay from './components/ResultsDisplay';
 import TeamResultsDisplay from './components/TeamResultsDisplay';
@@ -37,6 +38,8 @@ const WARValueCalculator = () => {
   const [payrollType, setPayrollType] = useState('total');
   const [results, setResults] = useState(null);
   const [errors, setErrors] = useState({ salary: '', war: '', wrcPlus: '', teamPayroll: '', teamWAR: '' });
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [useEnhancedForm, setUseEnhancedForm] = useState(true); // Toggle for testing
   
   const { history, showHistory, addToHistory, clearHistory, toggleHistory } = useCalculatorHistory();
   const { loadFromURL } = useURLParams(salary, war);
@@ -141,6 +144,7 @@ const WARValueCalculator = () => {
     setTeamPayroll('');
     setTeamWAR('');
     setResults(null);
+    setSelectedPlayer(null);
     setErrors({ salary: '', war: '', wrcPlus: '', teamPayroll: '', teamWAR: '' });
   };
 
@@ -158,6 +162,16 @@ const WARValueCalculator = () => {
           <p className="text-gray-400 text-base md:text-lg px-4">
             Analyze MLB contracts from a performance vs. salary perspective
           </p>
+          
+          {/* Development Toggle */}
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => setUseEnhancedForm(!useEnhancedForm)}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-colors border border-gray-600"
+            >
+              {useEnhancedForm ? '🔄 Switch to Classic Form' : '🚀 Switch to Enhanced Form'}
+            </button>
+          </div>
         </div>
 
         {/* Mode Selector */}
@@ -178,24 +192,46 @@ const WARValueCalculator = () => {
 
         {/* Main Calculator Card */}
         <div className="bg-gray-900 rounded-lg p-4 sm:p-6 md:p-8 shadow-2xl border border-gray-800">
-          {/* Calculator Form */}
-          <CalculatorForm
-            mode={mode}
-            salary={salary}
-            setSalary={setSalary}
-            war={war}
-            setWar={setWar}
-            wrcPlus={wrcPlus}
-            setWrcPlus={setWrcPlus}
-            teamPayroll={teamPayroll}
-            setTeamPayroll={setTeamPayroll}
-            teamWAR={teamWAR}
-            setTeamWAR={setTeamWAR}
-            warType={warType}
-            payrollType={payrollType}
-            setPayrollType={setPayrollType}
-            errors={errors}
-          />
+          {/* Enhanced Calculator Form with Player Search */}
+          {useEnhancedForm ? (
+            <EnhancedCalculatorForm
+              mode={mode}
+              salary={salary}
+              setSalary={setSalary}
+              war={war}
+              setWar={setWar}
+              wrcPlus={wrcPlus}
+              setWrcPlus={setWrcPlus}
+              teamPayroll={teamPayroll}
+              setTeamPayroll={setTeamPayroll}
+              teamWAR={teamWAR}
+              setTeamWAR={setTeamWAR}
+              warType={warType}
+              payrollType={payrollType}
+              setPayrollType={setPayrollType}
+              errors={errors}
+              selectedPlayer={selectedPlayer}
+              setSelectedPlayer={setSelectedPlayer}
+            />
+          ) : (
+            <CalculatorForm
+              mode={mode}
+              salary={salary}
+              setSalary={setSalary}
+              war={war}
+              setWar={setWar}
+              wrcPlus={wrcPlus}
+              setWrcPlus={setWrcPlus}
+              teamPayroll={teamPayroll}
+              setTeamPayroll={setTeamPayroll}
+              teamWAR={teamWAR}
+              setTeamWAR={setTeamWAR}
+              warType={warType}
+              payrollType={payrollType}
+              setPayrollType={setPayrollType}
+              errors={errors}
+            />
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-2 sm:gap-3 mb-4 md:mb-6">
