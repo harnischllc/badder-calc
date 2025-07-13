@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const path = require('path');
 
 const app = express();
 app.use(cors());
@@ -227,6 +228,14 @@ app.delete('/api/players/:playerId', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Serve static files from the frontend build
+app.use(express.static(path.join(__dirname, '..', 'dist')));
+
+// Catch-all: send back index.html for any route not handled
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });
 
 const port = process.env.PORT || 4000;
