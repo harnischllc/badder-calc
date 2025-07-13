@@ -1,236 +1,209 @@
 // © 2024–2025 Harnisch LLC. All rights reserved.
-// Player Data Service - Integrates multiple data sources
+// Player Data Service for fetching data from local backend API
 
-import mlbApi from './mlbApi';
+const BACKEND_BASE_URL = 'http://localhost:4000/api';
 
 class PlayerDataService {
   constructor() {
-    this.salaryData = new Map(); // Cache for salary data
-    this.warData = new Map(); // Cache for WAR data
-    this.cacheTimeout = 10 * 60 * 1000; // 10 minutes
+    this.baseUrl = BACKEND_BASE_URL;
+    this.cache = new Map();
+    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
   }
 
-  // Get comprehensive player data
-  async getPlayerData(playerId, season = new Date().getFullYear()) {
+  // Cache management
+  getCachedData(key) {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  setCachedData(key, data) {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  // Search players from local database
+  async searchPlayers(query, limit = 10) {
+    const cacheKey = `search_${query}_${limit}`;
+    const cached = this.getCachedData(cacheKey);
+    if (cached) return cached;
+
     try {
-      // Get basic player info from MLB API
-      const playerInfo = await mlbApi.getPlayerInfo(playerId);
-      const player = playerInfo.people[0];
-
-      if (!player) {
-        throw new Error('Player not found');
+      const url = `${this.baseUrl}/players?name=${encodeURIComponent(query)}&limit=${limit}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
-
-      // Get current season stats
-      const hittingStats = await mlbApi.getPlayerStats(playerId, season, 'hitting');
-      const pitchingStats = await mlbApi.getPlayerStats(playerId, season, 'pitching');
-
-      // Combine all data
-      const playerData = {
-        id: player.id,
-        name: player.fullName,
-        position: player.primaryPosition?.abbreviation || 'Unknown',
-        team: player.currentTeam?.name || 'Unknown',
-        age: player.currentAge,
-        height: player.height,
-        weight: player.weight,
-        mlbDebut: player.mlbDebutDate,
+      
+      const players = await response.json();
+      console.log('searchPlayers local data:', players);
+      
+      // Transform the data to match the expected format
+      const transformedPlayers = players.map(player => ({
+        id: player.player_id,
+        fullName: player.name, // changed from player.player_name
+        firstName: player.name.split(', ')[1] || player.name,
+        lastName: player.name.split(', ')[0] || player.name,
+        active: true,
+        isPlayer: true,
+        // Add some basic stats for display
         stats: {
-          hitting: this.extractHittingStats(hittingStats),
-          pitching: this.extractPitchingStats(pitchingStats)
-        },
-        // Placeholder for external data
-        salary: null,
-        war: null,
-        wrcPlus: null
-      };
-
-      // Try to get additional data from external sources
-      await this.enrichPlayerData(playerData, season);
-
-      return playerData;
-    } catch (error) {
-      console.error('Error fetching player data:', error);
-      throw error;
-    }
-  }
-
-  // Extract hitting stats from MLB API response
-  extractHittingStats(statsData) {
-    if (!statsData.stats || statsData.stats.length === 0) {
-      return null;
-    }
-
-    const splits = statsData.stats[0].splits;
-    if (!splits || splits.length === 0) {
-      return null;
-    }
-
-    const stats = splits[0].stat;
-    return {
-      games: stats.gamesPlayed || 0,
-      atBats: stats.atBats || 0,
-      hits: stats.hits || 0,
-      doubles: stats.doubles || 0,
-      triples: stats.triples || 0,
-      homeRuns: stats.homeRuns || 0,
-      rbi: stats.rbi || 0,
-      runs: stats.runs || 0,
-      walks: stats.baseOnBalls || 0,
-      strikeouts: stats.strikeOuts || 0,
-      stolenBases: stats.stolenBases || 0,
-      caughtStealing: stats.caughtStealing || 0,
-      avg: parseFloat(stats.avg) || 0,
-      obp: parseFloat(stats.obp) || 0,
-      slg: parseFloat(stats.slg) || 0,
-      ops: parseFloat(stats.ops) || 0,
-      babip: parseFloat(stats.babip) || 0
-    };
-  }
-
-  // Extract pitching stats from MLB API response
-  extractPitchingStats(statsData) {
-    if (!statsData.stats || statsData.stats.length === 0) {
-      return null;
-    }
-
-    const splits = statsData.stats[0].splits;
-    if (!splits || splits.length === 0) {
-      return null;
-    }
-
-    const stats = splits[0].stat;
-    return {
-      games: stats.gamesPlayed || 0,
-      gamesStarted: stats.gamesStarted || 0,
-      wins: stats.wins || 0,
-      losses: stats.losses || 0,
-      saves: stats.saves || 0,
-      inningsPitched: stats.inningsPitched || 0,
-      hits: stats.hits || 0,
-      runs: stats.runs || 0,
-      earnedRuns: stats.earnedRuns || 0,
-      walks: stats.baseOnBalls || 0,
-      strikeouts: stats.strikeOuts || 0,
-      era: parseFloat(stats.era) || 0,
-      whip: parseFloat(stats.whip) || 0,
-      strikeoutsPer9: parseFloat(stats.strikeoutsPer9Inn) || 0,
-      walksPer9: parseFloat(stats.walksPer9Inn) || 0
-    };
-  }
-
-  // Enrich player data with external sources
-  async enrichPlayerData(playerData, season) {
-    try {
-      // Get salary data (placeholder for now)
-      const salary = await this.getPlayerSalary(playerData.name, season);
-      if (salary) {
-        playerData.salary = salary;
-      }
-
-      // Get WAR data (placeholder for now)
-      const war = await this.getPlayerWAR(playerData.name, season);
-      if (war) {
-        playerData.war = war;
-      }
-
-      // Get wRC+ data (placeholder for now)
-      const wrcPlus = await this.getPlayerWRCPlus(playerData.name, season);
-      if (wrcPlus) {
-        playerData.wrcPlus = wrcPlus;
-      }
-    } catch (error) {
-      console.warn('Failed to enrich player data:', error);
-    }
-  }
-
-  // Placeholder for salary data integration
-  async getPlayerSalary(playerName, season) {
-    // This would integrate with Spotrac or similar service
-    // For now, return null to indicate manual input required
-    return null;
-  }
-
-  // Placeholder for WAR data integration
-  async getPlayerWAR(playerName, season) {
-    // This would integrate with FanGraphs or Baseball Reference
-    // For now, return null to indicate manual input required
-    return null;
-  }
-
-  // Placeholder for wRC+ data integration
-  async getPlayerWRCPlus(playerName, season) {
-    // This would integrate with FanGraphs
-    // For now, return null to indicate manual input required
-    return null;
-  }
-
-  // Search players with enhanced data
-  async searchPlayersWithData(query, limit = 10) {
-    try {
-      const players = await mlbApi.searchPlayers(query, limit);
-      
-      // For now, return basic player data
-      // In the future, this could include salary and WAR estimates
-      return players.map(player => ({
-        id: player.id,
-        name: player.fullName,
-        position: player.primaryPosition?.abbreviation || 'Unknown',
-        team: player.currentTeam?.name || 'Unknown',
-        age: player.currentAge,
-        hasSalaryData: false,
-        hasWARData: false
+          ba: player.ba,
+          obp: player.obp,
+          slg: player.slg,
+          woba: player.woba,
+          pa: player.pa,
+          hits: player.hits,
+          hrs: player.hrs
+        }
       }));
+      
+      this.setCachedData(cacheKey, transformedPlayers);
+      return transformedPlayers;
     } catch (error) {
-      console.error('Error searching players with data:', error);
-      throw error;
+      console.error('searchPlayers error:', error);
+      // Return empty array on error for UI robustness
+      return [];
     }
   }
 
-  // Get team data with roster
-  async getTeamData(teamId, season = new Date().getFullYear()) {
+  // Get player stats from local database
+  async getPlayerStats(playerId, season = new Date().getFullYear(), group = 'hitting') {
+    const cacheKey = `stats_${playerId}_${season}_${group}`;
+    const cached = this.getCachedData(cacheKey);
+    if (cached) return cached;
+
     try {
-      const teams = await mlbApi.getTeams(season);
-      const team = teams.find(t => t.id === teamId);
+      const url = `${this.baseUrl}/players/${playerId}`;
+      const response = await fetch(url);
       
-      if (!team) {
-        throw new Error('Team not found');
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
-
-      const roster = await mlbApi.getTeamRoster(teamId, season);
       
-      return {
-        id: team.id,
-        name: team.name,
-        abbreviation: team.abbreviation,
-        division: team.division?.name,
-        league: team.league?.name,
-        roster: roster.roster || []
+      const player = await response.json();
+      const statcast = player.statcast_history && player.statcast_history[0];
+      const fangraphs = player.fangraphs_history && player.fangraphs_history[0];
+      // Transform to match expected stats format
+      const toNum = v => v === null || v === undefined ? 0 : Number(v);
+      const stats = {
+        stats: [{
+          group: { displayName: 'Hitting' },
+          stats: [
+            { name: 'avg', value: toNum(statcast?.ba || fangraphs?.avg) },
+            { name: 'obp', value: toNum(fangraphs?.obp) },
+            { name: 'slg', value: toNum(statcast?.slg || fangraphs?.slg) },
+            { name: 'woba', value: toNum(statcast?.woba || fangraphs?.woba) },
+            { name: 'pa', value: toNum(statcast?.plate_appearances || fangraphs?.plate_appearances) },
+            { name: 'hits', value: toNum(statcast?.hits) },
+            { name: 'hrs', value: toNum(statcast?.home_runs || fangraphs?.home_runs) },
+            { name: 'bb', value: toNum(fangraphs?.walks) },
+            { name: 'so', value: toNum(statcast?.strikeouts || fangraphs?.strikeouts) },
+            { name: 'iso', value: toNum(statcast?.iso || fangraphs?.iso) },
+            { name: 'babip', value: toNum(statcast?.babip || fangraphs?.babip) },
+            { name: 'xba', value: toNum(statcast?.xba) },
+            { name: 'xwoba', value: toNum(statcast?.xwoba) }
+          ]
+        }]
       };
+      
+      this.setCachedData(cacheKey, stats);
+      return stats;
     } catch (error) {
-      console.error('Error fetching team data:', error);
-      throw error;
+      console.error('getPlayerStats error:', error);
+      // Return fallback empty stats for UI robustness
+      return { stats: [{ group: { displayName: 'Hitting' }, stats: [] }] };
     }
   }
 
-  // Get league averages for comparison
-  async getLeagueAverages(season = new Date().getFullYear()) {
-    // This would fetch league-wide statistics
-    // For now, return static data
-    return {
-      avgBattingAvg: 0.248,
-      avgOBP: 0.320,
-      avgSLG: 0.414,
-      avgERA: 4.33,
-      avgWHIP: 1.30
-    };
+  // Get player info from local database
+  async getPlayerInfo(playerId) {
+    const cacheKey = `player_${playerId}`;
+    const cached = this.getCachedData(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const url = `${this.baseUrl}/players/${playerId}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const player = await response.json();
+      const playerObj = player.player || player; // handle both {player: {...}} and {...}
+      const name = playerObj.name || 'Unknown';
+      // Transform to match expected player info format
+      const playerInfo = {
+        people: [{
+          id: playerObj.player_id,
+          fullName: name,
+          firstName: name.split(', ')[1] || name,
+          lastName: name.split(', ')[0] || name,
+          active: true,
+          isPlayer: true,
+          primaryPosition: { abbreviation: 'B' }, // Batter
+          currentTeam: { name: 'MLB' }
+        }]
+      };
+      
+      this.setCachedData(cacheKey, playerInfo);
+      return playerInfo;
+    } catch (error) {
+      console.error('getPlayerInfo error:', error);
+      // Return fallback player info for UI robustness
+      return { people: [{ id: playerId, fullName: 'Unknown', firstName: 'Unknown', lastName: 'Unknown', active: false, isPlayer: false, primaryPosition: { abbreviation: 'B' }, currentTeam: { name: 'MLB' } }] };
+    }
   }
 
-  // Clear all caches
+  // Get all players (for dropdown/selection)
+  async getAllPlayers(limit = 100) {
+    const cacheKey = `all_players_${limit}`;
+    const cached = this.getCachedData(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const url = `${this.baseUrl}/players?limit=${limit}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const players = await response.json();
+      
+      // Transform the data to match the expected format
+      const transformedPlayers = players.map(player => ({
+        id: player.player_id,
+        fullName: player.name, // changed from player.player_name
+        firstName: player.name.split(', ')[1] || player.name,
+        lastName: player.name.split(', ')[0] || player.name,
+        active: true,
+        isPlayer: true
+      }));
+      
+      this.setCachedData(cacheKey, transformedPlayers);
+      return transformedPlayers;
+    } catch (error) {
+      console.error('getAllPlayers error:', error);
+      // Return empty array on error for UI robustness
+      return [];
+    }
+  }
+
+  // Clear cache
   clearCache() {
-    this.salaryData.clear();
-    this.warData.clear();
-    mlbApi.clearCache();
+    this.cache.clear();
+  }
+
+  // Get cache size
+  getCacheSize() {
+    return this.cache.size;
   }
 }
 

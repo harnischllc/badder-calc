@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, User } from 'lucide-react';
-import mlbApi from '../services/mlbApi';
+import playerDataService from '../services/playerDataService';
 
 const PlayerSearch = ({ onPlayerSelect, placeholder = "Search for a player..." }) => {
   const [query, setQuery] = useState('');
@@ -40,7 +40,7 @@ const PlayerSearch = ({ onPlayerSelect, placeholder = "Search for a player..." }
     setError('');
 
     try {
-      const players = await mlbApi.searchPlayers(query, 15);
+      const players = await playerDataService.searchPlayers(query, 15);
       setResults(players);
       setShowResults(true);
     } catch (err) {
@@ -126,7 +126,7 @@ const PlayerSearch = ({ onPlayerSelect, placeholder = "Search for a player..." }
         <div className="absolute z-50 w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
           {results.map((player) => (
             <button
-              key={player.id}
+              key={player.id || player.player_id || Math.random()}
               onClick={() => handlePlayerSelect(player)}
               className="w-full px-4 py-3 text-left hover:bg-gray-800 transition-colors border-b border-gray-700 last:border-b-0"
             >
@@ -136,9 +136,10 @@ const PlayerSearch = ({ onPlayerSelect, placeholder = "Search for a player..." }
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-medium truncate">
-                    {player.fullName}
+                    {player.fullName || player.name || 'Unknown Player'}
                   </div>
                   <div className="text-sm text-gray-400 truncate">
+                    {/* Defensive: check for position and age */}
                     {player.primaryPosition?.name && (
                       <span>{getPositionDisplay(player.primaryPosition.abbreviation)}</span>
                     )}
