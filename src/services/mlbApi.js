@@ -58,9 +58,16 @@ class MLBApiService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${this.baseUrl}/people?search=${encodeURIComponent(query)}&limit=${limit}`);
+      const url = `${this.baseUrl}/people?search=${encodeURIComponent(query)}&limit=${limit}`;
+      const response = await fetch(url);
+      console.log('searchPlayers response:', response);
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Non-OK response:', response.status, text);
+        throw new Error(`API error: ${response.status}`);
+      }
       const data = await response.json();
-      
+      console.log('searchPlayers data:', data);
       // Filter for active MLB players
       const activePlayers = data.people.filter(person => 
         person.active && person.isPlayer
@@ -69,8 +76,8 @@ class MLBApiService {
       this.setCachedData(cacheKey, activePlayers);
       return activePlayers;
     } catch (error) {
-      console.error('Error searching players:', error);
-      throw error;
+      console.error('searchPlayers error:', error);
+      throw new Error(`Search failed: ${error.message}`);
     }
   }
 
