@@ -27,9 +27,18 @@ import {
 import { LEAGUE_DATA } from './utils/constants';
 
 const App = () => {
-  // Check if we're on the admin route
-  const isAdminRoute = window.location.pathname === '/admin';
+  // Check if we're on the admin route using hash
+  const [isAdminRoute, setIsAdminRoute] = useState(window.location.hash === '#/admin');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Listen for hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      setIsAdminRoute(window.location.hash === '#/admin');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Simple authentication for admin
   useEffect(() => {
@@ -38,7 +47,7 @@ const App = () => {
       if (password === 'admin') {
         setIsAuthenticated(true);
       } else {
-        window.location.href = '/';
+        window.location.hash = '';
       }
     }
   }, [isAdminRoute, isAuthenticated]);
