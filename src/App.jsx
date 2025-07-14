@@ -8,23 +8,37 @@ import WARValueCalculator from './WARValueCalculator';
 
 const App = () => {
   const [showAdmin, setShowAdmin] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check URL parameters on load
-    const urlParams = new URLSearchParams(window.location.search);
-    const isAdminRoute = urlParams.get('admin') === 'true';
-    
-    if (isAdminRoute && !isAuthenticated) {
-      const password = prompt('Enter admin password:');
-      if (password === 'badderadmin2024') {
-        setShowAdmin(true);
-        setIsAuthenticated(true);
-      } else {
-        // Remove admin parameter and redirect
-        window.location.href = window.location.origin + window.location.pathname;
+    // Check URL on load and listen for changes
+    const checkForAdmin = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('admin') === 'true') {
+        const password = prompt('Enter admin password:');
+        if (password === 'badderadmin2024') {
+          setShowAdmin(true);
+        } else {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
       }
-    }
+    };
+
+    // Check on load
+    checkForAdmin();
+
+    // Listen for keyboard shortcut: Ctrl+Shift+A
+    const handleKeyPress = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        const password = prompt('Enter admin password:');
+        if (password === 'badderadmin2024') {
+          setShowAdmin(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
   if (showAdmin) {
