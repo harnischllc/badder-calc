@@ -1,7 +1,7 @@
 # Admin Dashboard - WAR Value Calculator
 
 ## Overview
-The Admin Dashboard provides a comprehensive interface for managing player and team data for the WAR Value Calculator. It allows you to import, export, edit, and manage CSV files containing player statistics and team information.
+The Admin Dashboard provides a comprehensive interface for managing player and team data for the WAR Value Calculator. It allows you to import, export, edit, and manage CSV files containing player statistics and team information across different seasons.
 
 ## Features
 
@@ -11,6 +11,7 @@ The Admin Dashboard provides a comprehensive interface for managing player and t
 - **Add Player**: Manually add individual players
 - **Edit Players**: Inline editing of player data
 - **Delete Players**: Remove players from the database
+- **Season Tracking**: Track player performance across multiple seasons
 
 ### Team Data Management
 - **Import Teams CSV**: Upload CSV files with team data
@@ -18,6 +19,7 @@ The Admin Dashboard provides a comprehensive interface for managing player and t
 - **Add Team**: Manually add individual teams
 - **Edit Teams**: Inline editing of team data
 - **Delete Teams**: Remove teams from the database
+- **Season Tracking**: Track team performance across multiple seasons
 
 ### Data Persistence
 - All data is stored locally in your browser's localStorage
@@ -29,12 +31,13 @@ The Admin Dashboard provides a comprehensive interface for managing player and t
 ### Players CSV Format
 Your CSV file should include the following columns:
 ```csv
-name,playerId,war,fwar,bwar,wrcPlus,salary
+name,playerId,season,war,fwar,bwar,wrcPlus,salary
 ```
 
 **Column Descriptions:**
 - `name`: Player's full name (required)
 - `playerId`: MLB Player ID (required)
+- `season`: Season year (required, e.g., 2024, 2023)
 - `war`: Wins Above Replacement (numeric)
 - `fwar`: FanGraphs WAR (numeric)
 - `bwar`: Baseball Reference WAR (numeric)
@@ -44,18 +47,19 @@ name,playerId,war,fwar,bwar,wrcPlus,salary
 ### Teams CSV Format
 Your CSV file should include the following columns:
 ```csv
-teamName,totalPayroll,activePayroll,teamWar
+teamName,season,totalPayroll,activePayroll,teamWar
 ```
 
 **Column Descriptions:**
 - `teamName`: Team name (required)
+- `season`: Season year (required, e.g., 2024, 2023)
 - `totalPayroll`: Total team payroll in millions of dollars (numeric)
 - `activePayroll`: Active roster payroll in millions of dollars (numeric)
 - `teamWar`: Total team WAR (numeric)
 
 ## Sample Files
-- `sample_players.csv`: Contains sample player data for testing
-- `sample_teams.csv`: Contains sample team data for testing
+- `sample_players.csv`: Contains sample player data for testing (2024 season)
+- `sample_teams.csv`: Contains sample team data for testing (2024 season)
 
 ## Usage Instructions
 
@@ -82,7 +86,7 @@ teamName,totalPayroll,activePayroll,teamWar
 
 ### Adding New Records
 1. Click the "Add [Player/Team]" button
-2. Fill in the required fields
+2. Fill in the required fields (season defaults to current year)
 3. Data is automatically saved
 
 ### Deleting Records
@@ -96,10 +100,17 @@ teamName,totalPayroll,activePayroll,teamWar
 3. All data will be permanently deleted
 
 ## Data Validation
-- Player imports require at least a name and player ID
-- Team imports require at least a team name
+- Player imports require at least a name, player ID, and season
+- Team imports require at least a team name and season
+- Season field accepts years between 1900-2100
 - Numeric fields are automatically converted and default to 0 if invalid
 - Empty or invalid rows are automatically filtered out
+
+## Multi-Season Data Management
+- Each player/team record is tied to a specific season
+- You can import data for multiple seasons in the same CSV
+- The dashboard displays all seasons together for easy comparison
+- Export includes all seasons in a single CSV file
 
 ## Browser Compatibility
 - Modern browsers with localStorage support
@@ -116,8 +127,9 @@ teamName,totalPayroll,activePayroll,teamWar
 
 ### Import Issues
 - Ensure your CSV file has the correct column headers
-- Check that required fields (name/playerId for players, teamName for teams) are present
+- Check that required fields (name/playerId/season for players, teamName/season for teams) are present
 - Verify numeric fields contain valid numbers
+- Ensure season field contains valid years (1900-2100)
 - Try opening the CSV in a text editor to check for formatting issues
 
 ### Export Issues
@@ -134,6 +146,8 @@ teamName,totalPayroll,activePayroll,teamWar
 - Database integration for persistent storage
 - User authentication and access control
 - Advanced filtering and search capabilities
+- Season-based filtering and comparison tools
 - Bulk editing operations
 - Data validation rules and constraints
-- API integration with MLB data sources 
+- API integration with MLB data sources
+- Historical data analysis and trends 

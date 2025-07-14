@@ -14,12 +14,12 @@ const AdminDashboard = () => {
 
   // Sample data structure for players
   const playerFields = [
-    'name', 'playerId', 'war', 'fwar', 'bwar', 'wrcPlus', 'salary'
+    'name', 'playerId', 'season', 'war', 'fwar', 'bwar', 'wrcPlus', 'salary'
   ];
 
   // Sample data structure for teams
   const teamFields = [
-    'teamName', 'totalPayroll', 'activePayroll', 'teamWar'
+    'teamName', 'season', 'totalPayroll', 'activePayroll', 'teamWar'
   ];
 
   useEffect(() => {
@@ -58,10 +58,11 @@ const AdminDashboard = () => {
       header: true,
       complete: (results) => {
         const validPlayers = results.data.filter(player => 
-          player.name && player.playerId
+          player.name && player.playerId && player.season
         ).map(player => ({
           name: player.name || '',
           playerId: player.playerId || '',
+          season: parseInt(player.season) || new Date().getFullYear(),
           war: parseFloat(player.war) || 0,
           fwar: parseFloat(player.fwar) || 0,
           bwar: parseFloat(player.bwar) || 0,
@@ -97,6 +98,7 @@ const AdminDashboard = () => {
     const newPlayer = {
       name: '',
       playerId: '',
+      season: new Date().getFullYear(),
       war: 0,
       fwar: 0,
       bwar: 0,
@@ -129,9 +131,10 @@ const AdminDashboard = () => {
       header: true,
       complete: (results) => {
         const validTeams = results.data.filter(team => 
-          team.teamName
+          team.teamName && team.season
         ).map(team => ({
           teamName: team.teamName || '',
+          season: parseInt(team.season) || new Date().getFullYear(),
           totalPayroll: parseFloat(team.totalPayroll) || 0,
           activePayroll: parseFloat(team.activePayroll) || 0,
           teamWar: parseFloat(team.teamWar) || 0
@@ -164,6 +167,7 @@ const AdminDashboard = () => {
   const addTeam = () => {
     const newTeam = {
       teamName: '',
+      season: new Date().getFullYear(),
       totalPayroll: 0,
       activePayroll: 0,
       teamWar: 0
@@ -284,6 +288,7 @@ const AdminDashboard = () => {
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-2">Name</th>
                     <th className="text-left p-2">Player ID</th>
+                    <th className="text-left p-2">Season</th>
                     <th className="text-left p-2">WAR</th>
                     <th className="text-left p-2">fWAR</th>
                     <th className="text-left p-2">bWAR</th>
@@ -309,6 +314,16 @@ const AdminDashboard = () => {
                           value={player.playerId}
                           onChange={(e) => updatePlayer(index, 'playerId', e.target.value)}
                           className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="1900"
+                          max="2100"
+                          value={player.season}
+                          onChange={(e) => updatePlayer(index, 'season', parseInt(e.target.value) || new Date().getFullYear())}
+                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                         />
                       </td>
                       <td className="p-2">
@@ -409,6 +424,7 @@ const AdminDashboard = () => {
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-2">Team Name</th>
+                    <th className="text-left p-2">Season</th>
                     <th className="text-left p-2">Total Payroll ($M)</th>
                     <th className="text-left p-2">Active Payroll ($M)</th>
                     <th className="text-left p-2">Team WAR</th>
@@ -424,6 +440,16 @@ const AdminDashboard = () => {
                           value={team.teamName}
                           onChange={(e) => updateTeam(index, 'teamName', e.target.value)}
                           className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="1900"
+                          max="2100"
+                          value={team.season}
+                          onChange={(e) => updateTeam(index, 'season', parseInt(e.target.value) || new Date().getFullYear())}
+                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                         />
                       </td>
                       <td className="p-2">
