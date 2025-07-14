@@ -3,7 +3,7 @@
 // Unauthorized commercial use or branding is prohibited.
 
 import React, { useState, useEffect } from 'react';
-import { Calculator, X, History, Lock } from 'lucide-react';
+import { Calculator, X, History } from 'lucide-react';
 import ModeSelector from './components/ModeSelector';
 import WARTypeSelector from './components/WARTypeSelector';
 import PositionSelector from './components/PositionSelector';
@@ -25,41 +25,6 @@ import {
   validateWRCPlusInputs
 } from './utils/calculations';
 import { LEAGUE_DATA } from './utils/constants';
-
-const App = () => {
-  // Check if we're on the admin route using hash
-  const [isAdminRoute, setIsAdminRoute] = useState(window.location.hash === '#/admin');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Listen for hash changes
-  useEffect(() => {
-    const handleHashChange = () => {
-      setIsAdminRoute(window.location.hash === '#/admin');
-    };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Simple authentication for admin
-  useEffect(() => {
-    if (isAdminRoute && !isAuthenticated) {
-      const password = prompt('Enter admin password:');
-      if (password === 'admin') {
-        setIsAuthenticated(true);
-      } else {
-        window.location.hash = '';
-      }
-    }
-  }, [isAdminRoute, isAuthenticated]);
-
-  // Show admin dashboard if on admin route and authenticated
-  if (isAdminRoute && isAuthenticated) {
-    return <AdminDashboard />;
-  }
-
-  // Otherwise show the main calculator
-  return <WARValueCalculator />;
-};
 
 const WARValueCalculator = () => {
   const [mode, setMode] = useState('individual');
@@ -314,6 +279,39 @@ const WARValueCalculator = () => {
       </div>
     </div>
   );
+};
+
+const App = () => {
+  const [currentRoute, setCurrentRoute] = useState(window.location.hash.slice(1) || '/');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentRoute(window.location.hash.slice(1) || '/');
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Handle authentication
+  useEffect(() => {
+    if (currentRoute === '/admin' && !isAuthenticated) {
+      const password = prompt('Enter admin password:');
+      if (password === 'badderadmin2024') {
+        setIsAuthenticated(true);
+      } else {
+        window.location.hash = '/';
+      }
+    }
+  }, [currentRoute, isAuthenticated]);
+
+  // Route to appropriate component
+  if (currentRoute === '/admin' && isAuthenticated) {
+    return <AdminDashboard />;
+  }
+  
+  return <WARValueCalculator />;
 };
 
 export default App;
