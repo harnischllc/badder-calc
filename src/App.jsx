@@ -3,8 +3,7 @@
 // Unauthorized commercial use or branding is prohibited.
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Calculator, X, History, Settings } from 'lucide-react';
+import { Calculator, X, History } from 'lucide-react';
 import ModeSelector from './components/ModeSelector';
 import WARTypeSelector from './components/WARTypeSelector';
 import PositionSelector from './components/PositionSelector';
@@ -14,7 +13,6 @@ import HistoryPanel from './components/HistoryPanel';
 import ResultsDisplay from './components/ResultsDisplay';
 import TeamResultsDisplay from './components/TeamResultsDisplay';
 import WRCPlusResultsDisplay from './components/WRCPlusResultsDisplay';
-import AdminDashboard from './components/AdminDashboard';
 import { useCalculatorHistory } from './hooks/useCalculatorHistory';
 import { useURLParams } from './hooks/useURLParams';
 import { 
@@ -282,59 +280,4 @@ const WARValueCalculator = () => {
   );
 };
 
-const App = () => {
-  const location = useLocation();
-  const isAdmin = location.pathname === '/admin';
-
-  return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Navigation Header */}
-      <nav className="bg-gray-900 border-b border-gray-800 p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2 text-white hover:text-red-400 transition-colors">
-            <Calculator className="w-6 h-6 text-red-500" />
-            <span className="font-bold text-lg">WAR Calculator</span>
-          </Link>
-          
-          <div className="flex items-center gap-4">
-            <Link
-              to="/"
-              className={`px-3 py-2 rounded transition-colors ${
-                location.pathname === '/' 
-                  ? 'bg-red-600 text-white' 
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              Calculator
-            </Link>
-            <Link
-              to="/admin"
-              className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-                isAdmin 
-                  ? 'bg-red-600 text-white' 
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              Admin
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <Routes>
-        <Route path="/" element={<WARValueCalculator />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-      </Routes>
-    </div>
-  );
-};
-
-const AppWrapper = () => (
-  <Router>
-    <App />
-  </Router>
-);
-
-export default AppWrapper;
+export default WARValueCalculator;
