@@ -3,7 +3,7 @@
 // Unauthorized commercial use or branding is prohibited.
 
 import React, { useState, useEffect } from 'react';
-import { Calculator, X, History } from 'lucide-react';
+import { Calculator, X, History, Lock } from 'lucide-react';
 import ModeSelector from './components/ModeSelector';
 import WARTypeSelector from './components/WARTypeSelector';
 import PositionSelector from './components/PositionSelector';
@@ -13,6 +13,7 @@ import HistoryPanel from './components/HistoryPanel';
 import ResultsDisplay from './components/ResultsDisplay';
 import TeamResultsDisplay from './components/TeamResultsDisplay';
 import WRCPlusResultsDisplay from './components/WRCPlusResultsDisplay';
+import AdminDashboard from './components/AdminDashboard';
 import { useCalculatorHistory } from './hooks/useCalculatorHistory';
 import { useURLParams } from './hooks/useURLParams';
 import { 
@@ -24,6 +25,32 @@ import {
   validateWRCPlusInputs
 } from './utils/calculations';
 import { LEAGUE_DATA } from './utils/constants';
+
+const App = () => {
+  // Check if we're on the admin route
+  const isAdminRoute = window.location.pathname === '/admin';
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Simple authentication for admin
+  useEffect(() => {
+    if (isAdminRoute && !isAuthenticated) {
+      const password = prompt('Enter admin password:');
+      if (password === 'admin') {
+        setIsAuthenticated(true);
+      } else {
+        window.location.href = '/';
+      }
+    }
+  }, [isAdminRoute, isAuthenticated]);
+
+  // Show admin dashboard if on admin route and authenticated
+  if (isAdminRoute && isAuthenticated) {
+    return <AdminDashboard />;
+  }
+
+  // Otherwise show the main calculator
+  return <WARValueCalculator />;
+};
 
 const WARValueCalculator = () => {
   const [mode, setMode] = useState('individual');
@@ -280,4 +307,4 @@ const WARValueCalculator = () => {
   );
 };
 
-export default WARValueCalculator;
+export default App;
