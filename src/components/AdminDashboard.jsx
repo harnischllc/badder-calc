@@ -14,7 +14,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
 
   // API URL - Update this to your backend URL when deployed
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://badder-calc-backend.onrender.com';
 
   useEffect(() => {
     // Load data from API on component mount
