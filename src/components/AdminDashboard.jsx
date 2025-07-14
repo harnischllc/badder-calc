@@ -3,7 +3,7 @@
 // Unauthorized commercial use or branding is prohibited.
 
 import React, { useState, useEffect } from 'react';
-import { Upload, Download, Trash2, Plus, Database, Users, Building2 } from 'lucide-react';
+import { Upload, Download, Trash2, Plus, Database, Users, Building2, RefreshCw } from 'lucide-react';
 import Papa from 'papaparse';
 
 const AdminDashboard = () => {
@@ -11,37 +11,57 @@ const AdminDashboard = () => {
   const [teams, setTeams] = useState([]);
   const [activeTab, setActiveTab] = useState('players');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Sample data structure for players
-  const playerFields = [
-    'name', 'playerId', 'season', 'war', 'fwar', 'bwar', 'wrcPlus', 'salary'
-  ];
-
-  // Sample data structure for teams
-  const teamFields = [
-    'teamName', 'season', 'totalPayroll', 'activePayroll', 'teamWar'
-  ];
+  // API URL - Update this to your backend URL when deployed
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
   useEffect(() => {
-    // Load data from localStorage on component mount
+    // Load data from API on component mount
     loadData();
   }, []);
 
-  const loadData = () => {
-    const savedPlayers = localStorage.getItem('adminPlayers');
-    const savedTeams = localStorage.getItem('adminTeams');
-    
-    if (savedPlayers) {
-      setPlayers(JSON.parse(savedPlayers));
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [playersRes, teamsRes] = await Promise.all([
+        fetch(`${API_URL}/api/players`),
+        fetch(`${API_URL}/api/teams`)
+      ]);
+      
+      if (playersRes.ok) {
+        const playersData = await playersRes.json();
+        setPlayers(playersData.map(p => ({
+          id: p.id,
+          name: p.name,
+          playerId: p.player_id,
+          season: p.season,
+          position: p.position || '',
+          war: parseFloat(p.war) || 0,
+          fwar: parseFloat(p.fwar) || 0,
+          bwar: parseFloat(p.bwar) || 0,
+          wrcPlus: parseFloat(p.wrc_plus) || 0,
+          salary: parseFloat(p.salary) || 0
+        })));
+      }
+      
+      if (teamsRes.ok) {
+        const teamsData = await teamsRes.json();
+        setTeams(teamsData.map(t => ({
+          id: t.id,
+          teamName: t.team_name,
+          season: t.season,
+          totalPayroll: parseFloat(t.total_payroll) || 0,
+          activePayroll: parseFloat(t.active_payroll) || 0,
+          teamWar: parseFloat(t.team_war) || 0
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      showMessage('Failed to load data from server', 'error');
+    } finally {
+      setLoading(false);
     }
-    if (savedTeams) {
-      setTeams(JSON.parse(savedTeams));
-    }
-  };
-
-  const saveData = () => {
-    localStorage.setItem('adminPlayers', JSON.stringify(players));
-    localStorage.setItem('adminTeams', JSON.stringify(teams));
   };
 
   const showMessage = (text, type = 'success') => {
@@ -50,19 +70,20 @@ const AdminDashboard = () => {
   };
 
   // Player Management Functions
-  const handlePlayerFileUpload = (event) => {
+  const handlePlayerFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     Papa.parse(file, {
       header: true,
-      complete: (results) => {
+      complete: async (results) => {
         const validPlayers = results.data.filter(player => 
           player.name && player.playerId && player.season
         ).map(player => ({
           name: player.name || '',
           playerId: player.playerId || '',
           season: parseInt(player.season) || new Date().getFullYear(),
+          position: player.position || '',
           war: parseFloat(player.war) || 0,
           fwar: parseFloat(player.fwar) || 0,
           bwar: parseFloat(player.bwar) || 0,
@@ -70,9 +91,26 @@ const AdminDashboard = () => {
           salary: parseFloat(player.salary) || 0
         }));
 
-        setPlayers(validPlayers);
-        saveData();
-        showMessage(`Imported ${validPlayers.length} players successfully`);
+        try {
+          const response = await fetch(`${API_URL}/api/players/bulk`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ players: validPlayers })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            showMessage(`Imported ${result.imported} players successfully`);
+            loadData(); // Reload data
+          } else {
+            showMessage('Failed to import players', 'error');
+          }
+        } catch (error) {
+          console.error('Import error:', error);
+          showMessage('Error importing players', 'error');
+        }
       },
       error: (error) => {
         showMessage('Error parsing CSV file', 'error');
@@ -82,7 +120,17 @@ const AdminDashboard = () => {
   };
 
   const exportPlayers = () => {
-    const csv = Papa.unparse(players);
+    const csv = Papa.unparse(players.map(p => ({
+      name: p.name,
+      playerId: p.playerId,
+      season: p.season,
+      position: p.position,
+      war: p.war,
+      fwar: p.fwar,
+      bwar: p.bwar,
+      wrcPlus: p.wrcPlus,
+      salary: p.salary
+    })));
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -94,42 +142,100 @@ const AdminDashboard = () => {
     document.body.removeChild(link);
   };
 
-  const addPlayer = () => {
+  const addPlayer = async () => {
     const newPlayer = {
-      name: '',
-      playerId: '',
+      name: 'New Player',
+      player_id: `temp_${Date.now()}`,
       season: new Date().getFullYear(),
+      position: '',
       war: 0,
       fwar: 0,
       bwar: 0,
-      wrcPlus: 0,
+      wrc_plus: 0,
       salary: 0
     };
-    setPlayers([...players, newPlayer]);
+
+    try {
+      const response = await fetch(`${API_URL}/api/players`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newPlayer)
+      });
+
+      if (response.ok) {
+        loadData();
+        showMessage('Player added successfully');
+      } else {
+        showMessage('Failed to add player', 'error');
+      }
+    } catch (error) {
+      console.error('Add player error:', error);
+      showMessage('Error adding player', 'error');
+    }
   };
 
-  const updatePlayer = (index, field, value) => {
-    const updatedPlayers = [...players];
-    updatedPlayers[index] = { ...updatedPlayers[index], [field]: value };
-    setPlayers(updatedPlayers);
-    saveData();
+  const updatePlayer = async (id, field, value) => {
+    const player = players.find(p => p.id === id);
+    if (!player) return;
+
+    const updatedPlayer = {
+      ...player,
+      [field]: value,
+      player_id: player.playerId,
+      wrc_plus: player.wrcPlus
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/api/players/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedPlayer)
+      });
+
+      if (response.ok) {
+        // Update local state immediately for better UX
+        setPlayers(players.map(p => p.id === id ? { ...p, [field]: value } : p));
+      } else {
+        showMessage('Failed to update player', 'error');
+        loadData(); // Reload to revert changes
+      }
+    } catch (error) {
+      console.error('Update player error:', error);
+      showMessage('Error updating player', 'error');
+      loadData(); // Reload to revert changes
+    }
   };
 
-  const deletePlayer = (index) => {
-    const updatedPlayers = players.filter((_, i) => i !== index);
-    setPlayers(updatedPlayers);
-    saveData();
-    showMessage('Player deleted successfully');
+  const deletePlayer = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/api/players/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setPlayers(players.filter(p => p.id !== id));
+        showMessage('Player deleted successfully');
+      } else {
+        showMessage('Failed to delete player', 'error');
+      }
+    } catch (error) {
+      console.error('Delete player error:', error);
+      showMessage('Error deleting player', 'error');
+    }
   };
 
   // Team Management Functions
-  const handleTeamFileUpload = (event) => {
+  const handleTeamFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     Papa.parse(file, {
       header: true,
-      complete: (results) => {
+      complete: async (results) => {
         const validTeams = results.data.filter(team => 
           team.teamName && team.season
         ).map(team => ({
@@ -140,9 +246,26 @@ const AdminDashboard = () => {
           teamWar: parseFloat(team.teamWar) || 0
         }));
 
-        setTeams(validTeams);
-        saveData();
-        showMessage(`Imported ${validTeams.length} teams successfully`);
+        try {
+          const response = await fetch(`${API_URL}/api/teams/bulk`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ teams: validTeams })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            showMessage(`Imported ${result.imported} teams successfully`);
+            loadData(); // Reload data
+          } else {
+            showMessage('Failed to import teams', 'error');
+          }
+        } catch (error) {
+          console.error('Import error:', error);
+          showMessage('Error importing teams', 'error');
+        }
       },
       error: (error) => {
         showMessage('Error parsing CSV file', 'error');
@@ -152,7 +275,13 @@ const AdminDashboard = () => {
   };
 
   const exportTeams = () => {
-    const csv = Papa.unparse(teams);
+    const csv = Papa.unparse(teams.map(t => ({
+      teamName: t.teamName,
+      season: t.season,
+      totalPayroll: t.totalPayroll,
+      activePayroll: t.activePayroll,
+      teamWar: t.teamWar
+    })));
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -164,38 +293,87 @@ const AdminDashboard = () => {
     document.body.removeChild(link);
   };
 
-  const addTeam = () => {
+  const addTeam = async () => {
     const newTeam = {
-      teamName: '',
+      team_name: 'New Team',
       season: new Date().getFullYear(),
-      totalPayroll: 0,
-      activePayroll: 0,
-      teamWar: 0
+      total_payroll: 0,
+      active_payroll: 0,
+      team_war: 0
     };
-    setTeams([...teams, newTeam]);
+
+    try {
+      const response = await fetch(`${API_URL}/api/teams`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTeam)
+      });
+
+      if (response.ok) {
+        loadData();
+        showMessage('Team added successfully');
+      } else {
+        showMessage('Failed to add team', 'error');
+      }
+    } catch (error) {
+      console.error('Add team error:', error);
+      showMessage('Error adding team', 'error');
+    }
   };
 
-  const updateTeam = (index, field, value) => {
-    const updatedTeams = [...teams];
-    updatedTeams[index] = { ...updatedTeams[index], [field]: value };
-    setTeams(updatedTeams);
-    saveData();
+  const updateTeam = async (id, field, value) => {
+    const team = teams.find(t => t.id === id);
+    if (!team) return;
+
+    const updatedTeam = {
+      ...team,
+      [field]: value,
+      team_name: team.teamName,
+      total_payroll: team.totalPayroll,
+      active_payroll: team.activePayroll,
+      team_war: team.teamWar
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/api/teams/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTeam)
+      });
+
+      if (response.ok) {
+        // Update local state immediately for better UX
+        setTeams(teams.map(t => t.id === id ? { ...t, [field]: value } : t));
+      } else {
+        showMessage('Failed to update team', 'error');
+        loadData(); // Reload to revert changes
+      }
+    } catch (error) {
+      console.error('Update team error:', error);
+      showMessage('Error updating team', 'error');
+      loadData(); // Reload to revert changes
+    }
   };
 
-  const deleteTeam = (index) => {
-    const updatedTeams = teams.filter((_, i) => i !== index);
-    setTeams(updatedTeams);
-    saveData();
-    showMessage('Team deleted successfully');
-  };
+  const deleteTeam = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/api/teams/${id}`, {
+        method: 'DELETE'
+      });
 
-  const clearAllData = () => {
-    if (window.confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-      setPlayers([]);
-      setTeams([]);
-      localStorage.removeItem('adminPlayers');
-      localStorage.removeItem('adminTeams');
-      showMessage('All data cleared successfully');
+      if (response.ok) {
+        setTeams(teams.filter(t => t.id !== id));
+        showMessage('Team deleted successfully');
+      } else {
+        showMessage('Failed to delete team', 'error');
+      }
+    } catch (error) {
+      console.error('Delete team error:', error);
+      showMessage('Error deleting team', 'error');
     }
   };
 
@@ -248,6 +426,14 @@ const AdminDashboard = () => {
             <Building2 className="w-4 h-4" />
             Teams ({teams.length})
           </button>
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="ml-auto flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
         </div>
 
         {/* Players Tab */}
@@ -283,106 +469,131 @@ const AdminDashboard = () => {
 
             {/* Players Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left p-2">Name</th>
-                    <th className="text-left p-2">Player ID</th>
-                    <th className="text-left p-2">Season</th>
-                    <th className="text-left p-2">WAR</th>
-                    <th className="text-left p-2">fWAR</th>
-                    <th className="text-left p-2">bWAR</th>
-                    <th className="text-left p-2">wRC+</th>
-                    <th className="text-left p-2">Salary ($M)</th>
-                    <th className="text-left p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {players.map((player, index) => (
-                    <tr key={index} className="border-b border-gray-800 hover:bg-gray-800">
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={player.name}
-                          onChange={(e) => updatePlayer(index, 'name', e.target.value)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={player.playerId}
-                          onChange={(e) => updatePlayer(index, 'playerId', e.target.value)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          min="1900"
-                          max="2100"
-                          value={player.season}
-                          onChange={(e) => updatePlayer(index, 'season', parseInt(e.target.value) || new Date().getFullYear())}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={player.war}
-                          onChange={(e) => updatePlayer(index, 'war', parseFloat(e.target.value) || 0)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={player.fwar}
-                          onChange={(e) => updatePlayer(index, 'fwar', parseFloat(e.target.value) || 0)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={player.bwar}
-                          onChange={(e) => updatePlayer(index, 'bwar', parseFloat(e.target.value) || 0)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={player.wrcPlus}
-                          onChange={(e) => updatePlayer(index, 'wrcPlus', parseFloat(e.target.value) || 0)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={player.salary}
-                          onChange={(e) => updatePlayer(index, 'salary', parseFloat(e.target.value) || 0)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <button
-                          onClick={() => deletePlayer(index)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+              {loading ? (
+                <div className="text-center py-8 text-gray-400">Loading players...</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left p-2">Name</th>
+                      <th className="text-left p-2">Player ID</th>
+                      <th className="text-left p-2">Season</th>
+                      <th className="text-left p-2">Position</th>
+                      <th className="text-left p-2">WAR</th>
+                      <th className="text-left p-2">fWAR</th>
+                      <th className="text-left p-2">bWAR</th>
+                      <th className="text-left p-2">wRC+</th>
+                      <th className="text-left p-2">Salary ($M)</th>
+                      <th className="text-left p-2">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {players.map((player) => (
+                      <tr key={player.id} className="border-b border-gray-800 hover:bg-gray-800">
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={player.name}
+                            onChange={(e) => updatePlayer(player.id, 'name', e.target.value)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={player.playerId}
+                            onChange={(e) => updatePlayer(player.id, 'playerId', e.target.value)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            min="1900"
+                            max="2100"
+                            value={player.season}
+                            onChange={(e) => updatePlayer(player.id, 'season', parseInt(e.target.value) || new Date().getFullYear())}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <select
+                            value={player.position}
+                            onChange={(e) => updatePlayer(player.id, 'position', e.target.value)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
+                          >
+                            <option value="">-</option>
+                            <option value="C">C</option>
+                            <option value="1B">1B</option>
+                            <option value="2B">2B</option>
+                            <option value="3B">3B</option>
+                            <option value="SS">SS</option>
+                            <option value="LF">LF</option>
+                            <option value="CF">CF</option>
+                            <option value="RF">RF</option>
+                            <option value="DH">DH</option>
+                            <option value="SP">SP</option>
+                            <option value="RP">RP</option>
+                          </select>
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={player.war}
+                            onChange={(e) => updatePlayer(player.id, 'war', parseFloat(e.target.value) || 0)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={player.fwar}
+                            onChange={(e) => updatePlayer(player.id, 'fwar', parseFloat(e.target.value) || 0)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={player.bwar}
+                            onChange={(e) => updatePlayer(player.id, 'bwar', parseFloat(e.target.value) || 0)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={player.wrcPlus}
+                            onChange={(e) => updatePlayer(player.id, 'wrcPlus', parseFloat(e.target.value) || 0)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={player.salary}
+                            onChange={(e) => updatePlayer(player.id, 'salary', parseFloat(e.target.value) || 0)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => deletePlayer(player.id)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -420,99 +631,93 @@ const AdminDashboard = () => {
 
             {/* Teams Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left p-2">Team Name</th>
-                    <th className="text-left p-2">Season</th>
-                    <th className="text-left p-2">Total Payroll ($M)</th>
-                    <th className="text-left p-2">Active Payroll ($M)</th>
-                    <th className="text-left p-2">Team WAR</th>
-                    <th className="text-left p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teams.map((team, index) => (
-                    <tr key={index} className="border-b border-gray-800 hover:bg-gray-800">
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={team.teamName}
-                          onChange={(e) => updateTeam(index, 'teamName', e.target.value)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          min="1900"
-                          max="2100"
-                          value={team.season}
-                          onChange={(e) => updateTeam(index, 'season', parseInt(e.target.value) || new Date().getFullYear())}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={team.totalPayroll}
-                          onChange={(e) => updateTeam(index, 'totalPayroll', parseFloat(e.target.value) || 0)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-32"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={team.activePayroll}
-                          onChange={(e) => updateTeam(index, 'activePayroll', parseFloat(e.target.value) || 0)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-32"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={team.teamWar}
-                          onChange={(e) => updateTeam(index, 'teamWar', parseFloat(e.target.value) || 0)}
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <button
-                          onClick={() => deleteTeam(index)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+              {loading ? (
+                <div className="text-center py-8 text-gray-400">Loading teams...</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left p-2">Team Name</th>
+                      <th className="text-left p-2">Season</th>
+                      <th className="text-left p-2">Total Payroll ($M)</th>
+                      <th className="text-left p-2">Active Payroll ($M)</th>
+                      <th className="text-left p-2">Team WAR</th>
+                      <th className="text-left p-2">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {teams.map((team) => (
+                      <tr key={team.id} className="border-b border-gray-800 hover:bg-gray-800">
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={team.teamName}
+                            onChange={(e) => updateTeam(team.id, 'teamName', e.target.value)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            min="1900"
+                            max="2100"
+                            value={team.season}
+                            onChange={(e) => updateTeam(team.id, 'season', parseInt(e.target.value) || new Date().getFullYear())}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={team.totalPayroll}
+                            onChange={(e) => updateTeam(team.id, 'totalPayroll', parseFloat(e.target.value) || 0)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-32"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={team.activePayroll}
+                            onChange={(e) => updateTeam(team.id, 'activePayroll', parseFloat(e.target.value) || 0)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-32"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={team.teamWar}
+                            onChange={(e) => updateTeam(team.id, 'teamWar', parseFloat(e.target.value) || 0)}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => deleteTeam(team.id)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
 
-        {/* Data Management */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={clearAllData}
-            className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded transition-colors"
-          >
-            Clear All Data
-          </button>
-        </div>
-
         {/* Footer */}
         <div className="text-center mt-8 text-gray-500 text-sm">
-          <p>Data is stored locally in your browser</p>
-          <p className="mt-1">Export your data regularly to avoid loss</p>
+          <p>Connected to PostgreSQL database</p>
+          <p className="mt-1">All changes are saved automatically</p>
         </div>
       </div>
     </div>
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;
