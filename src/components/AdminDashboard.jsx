@@ -3,12 +3,14 @@
 // Unauthorized commercial use or branding is prohibited.
 
 import React, { useState, useEffect } from 'react';
-import { Upload, Download, Trash2, Plus, Database, Users, Building2, RefreshCw } from 'lucide-react';
+import { Upload, Download, Trash2, Plus, Database, Users, Building2, RefreshCw, Save, Check } from 'lucide-react';
 import Papa from 'papaparse';
 
 const AdminDashboard = () => {
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [editedPlayers, setEditedPlayers] = useState({}); // Track edited players
+  const [editedTeams, setEditedTeams] = useState({}); // Track edited teams
   const [activeTab, setActiveTab] = useState('players');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,6 +58,10 @@ const AdminDashboard = () => {
           teamWar: parseFloat(t.team_war) || 0
         })));
       }
+      
+      // Clear edited tracking after loading fresh data
+      setEditedPlayers({});
+      setEditedTeams({});
     } catch (error) {
       console.error('Failed to load data:', error);
       showMessage('Failed to load data from server', 'error');
@@ -176,13 +182,19 @@ const AdminDashboard = () => {
     }
   };
 
-  const updatePlayer = async (id, field, value) => {
+  // Update local state only - don't save to database yet
+  const updatePlayerLocally = (id, field, value) => {
+    setPlayers(players.map(p => p.id === id ? { ...p, [field]: value } : p));
+    setEditedPlayers({ ...editedPlayers, [id]: true });
+  };
+
+  // Save player to database
+  const savePlayer = async (id) => {
     const player = players.find(p => p.id === id);
     if (!player) return;
 
     const updatedPlayer = {
       ...player,
-      [field]: value,
       player_id: player.playerId,
       wrc_plus: player.wrcPlus
     };
@@ -197,20 +209,25 @@ const AdminDashboard = () => {
       });
 
       if (response.ok) {
-        // Update local state immediately for better UX
-        setPlayers(players.map(p => p.id === id ? { ...p, [field]: value } : p));
+        // Remove from edited tracking
+        const newEditedPlayers = { ...editedPlayers };
+        delete newEditedPlayers[id];
+        setEditedPlayers(newEditedPlayers);
+        showMessage('Player saved successfully!');
       } else {
-        showMessage('Failed to update player', 'error');
+        showMessage('Failed to save player', 'error');
         loadData(); // Reload to revert changes
       }
     } catch (error) {
-      console.error('Update player error:', error);
-      showMessage('Error updating player', 'error');
+      console.error('Save player error:', error);
+      showMessage('Error saving player', 'error');
       loadData(); // Reload to revert changes
     }
   };
 
   const deletePlayer = async (id) => {
+    if (!confirm('Are you sure you want to delete this player?')) return;
+    
     try {
       const response = await fetch(`${API_URL}/api/players/${id}`, {
         method: 'DELETE'
@@ -323,13 +340,19 @@ const AdminDashboard = () => {
     }
   };
 
-  const updateTeam = async (id, field, value) => {
+  // Update local state only - don't save to database yet
+  const updateTeamLocally = (id, field, value) => {
+    setTeams(teams.map(t => t.id === id ? { ...t, [field]: value } : t));
+    setEditedTeams({ ...editedTeams, [id]: true });
+  };
+
+  // Save team to database
+  const saveTeam = async (id) => {
     const team = teams.find(t => t.id === id);
     if (!team) return;
 
     const updatedTeam = {
       ...team,
-      [field]: value,
       team_name: team.teamName,
       total_payroll: team.totalPayroll,
       active_payroll: team.activePayroll,
@@ -346,20 +369,25 @@ const AdminDashboard = () => {
       });
 
       if (response.ok) {
-        // Update local state immediately for better UX
-        setTeams(teams.map(t => t.id === id ? { ...t, [field]: value } : t));
+        // Remove from edited tracking
+        const newEditedTeams = { ...editedTeams };
+        delete newEditedTeams[id];
+        setEditedTeams(newEditedTeams);
+        showMessage('Team saved successfully!');
       } else {
-        showMessage('Failed to update team', 'error');
+        showMessage('Failed to save team', 'error');
         loadData(); // Reload to revert changes
       }
     } catch (error) {
-      console.error('Update team error:', error);
-      showMessage('Error updating team', 'error');
+      console.error('Save team error:', error);
+      showMessage('Error saving team', 'error');
       loadData(); // Reload to revert changes
     }
   };
 
   const deleteTeam = async (id) => {
+    if (!confirm('Are you sure you want to delete this team?')) return;
+    
     try {
       const response = await fetch(`${API_URL}/api/teams/${id}`, {
         method: 'DELETE'
@@ -489,12 +517,14 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {players.map((player) => (
-                      <tr key={player.id} className="border-b border-gray-800 hover:bg-gray-800">
+                      <tr key={player.id} className={`border-b border-gray-800 hover:bg-gray-800 ${
+                        editedPlayers[player.id] ? 'bg-yellow-900/20' : ''
+                      }`}>
                         <td className="p-2">
                           <input
                             type="text"
                             value={player.name}
-                            onChange={(e) => updatePlayer(player.id, 'name', e.target.value)}
+                            onChange={(e) => updatePlayerLocally(player.id, 'name', e.target.value)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
                           />
                         </td>
@@ -502,7 +532,7 @@ const AdminDashboard = () => {
                           <input
                             type="text"
                             value={player.playerId}
-                            onChange={(e) => updatePlayer(player.id, 'playerId', e.target.value)}
+                            onChange={(e) => updatePlayerLocally(player.id, 'playerId', e.target.value)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
                           />
                         </td>
@@ -512,14 +542,14 @@ const AdminDashboard = () => {
                             min="1900"
                             max="2100"
                             value={player.season}
-                            onChange={(e) => updatePlayer(player.id, 'season', parseInt(e.target.value) || new Date().getFullYear())}
+                            onChange={(e) => updatePlayerLocally(player.id, 'season', parseInt(e.target.value) || new Date().getFullYear())}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                           />
                         </td>
                         <td className="p-2">
                           <select
                             value={player.position}
-                            onChange={(e) => updatePlayer(player.id, 'position', e.target.value)}
+                            onChange={(e) => updatePlayerLocally(player.id, 'position', e.target.value)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
                           >
                             <option value="">-</option>
@@ -541,7 +571,7 @@ const AdminDashboard = () => {
                             type="number"
                             step="0.1"
                             value={player.war}
-                            onChange={(e) => updatePlayer(player.id, 'war', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updatePlayerLocally(player.id, 'war', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                           />
                         </td>
@@ -550,7 +580,7 @@ const AdminDashboard = () => {
                             type="number"
                             step="0.1"
                             value={player.fwar}
-                            onChange={(e) => updatePlayer(player.id, 'fwar', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updatePlayerLocally(player.id, 'fwar', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                           />
                         </td>
@@ -559,7 +589,7 @@ const AdminDashboard = () => {
                             type="number"
                             step="0.1"
                             value={player.bwar}
-                            onChange={(e) => updatePlayer(player.id, 'bwar', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updatePlayerLocally(player.id, 'bwar', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                           />
                         </td>
@@ -568,7 +598,7 @@ const AdminDashboard = () => {
                             type="number"
                             step="0.1"
                             value={player.wrcPlus}
-                            onChange={(e) => updatePlayer(player.id, 'wrcPlus', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updatePlayerLocally(player.id, 'wrcPlus', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                           />
                         </td>
@@ -577,17 +607,31 @@ const AdminDashboard = () => {
                             type="number"
                             step="0.1"
                             value={player.salary}
-                            onChange={(e) => updatePlayer(player.id, 'salary', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updatePlayerLocally(player.id, 'salary', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                           />
                         </td>
                         <td className="p-2">
-                          <button
-                            onClick={() => deletePlayer(player.id)}
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex gap-2">
+                            {editedPlayers[player.id] ? (
+                              <button
+                                onClick={() => savePlayer(player.id)}
+                                className="text-green-400 hover:text-green-300"
+                                title="Save changes"
+                              >
+                                <Save className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <Check className="w-4 h-4 text-gray-500" />
+                            )}
+                            <button
+                              onClick={() => deletePlayer(player.id)}
+                              className="text-red-400 hover:text-red-300"
+                              title="Delete player"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -647,12 +691,14 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {teams.map((team) => (
-                      <tr key={team.id} className="border-b border-gray-800 hover:bg-gray-800">
+                      <tr key={team.id} className={`border-b border-gray-800 hover:bg-gray-800 ${
+                        editedTeams[team.id] ? 'bg-yellow-900/20' : ''
+                      }`}>
                         <td className="p-2">
                           <input
                             type="text"
                             value={team.teamName}
-                            onChange={(e) => updateTeam(team.id, 'teamName', e.target.value)}
+                            onChange={(e) => updateTeamLocally(team.id, 'teamName', e.target.value)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-full"
                           />
                         </td>
@@ -662,7 +708,7 @@ const AdminDashboard = () => {
                             min="1900"
                             max="2100"
                             value={team.season}
-                            onChange={(e) => updateTeam(team.id, 'season', parseInt(e.target.value) || new Date().getFullYear())}
+                            onChange={(e) => updateTeamLocally(team.id, 'season', parseInt(e.target.value) || new Date().getFullYear())}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                           />
                         </td>
@@ -671,7 +717,7 @@ const AdminDashboard = () => {
                             type="number"
                             step="0.1"
                             value={team.totalPayroll}
-                            onChange={(e) => updateTeam(team.id, 'totalPayroll', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updateTeamLocally(team.id, 'totalPayroll', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-32"
                           />
                         </td>
@@ -680,7 +726,7 @@ const AdminDashboard = () => {
                             type="number"
                             step="0.1"
                             value={team.activePayroll}
-                            onChange={(e) => updateTeam(team.id, 'activePayroll', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updateTeamLocally(team.id, 'activePayroll', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-32"
                           />
                         </td>
@@ -689,17 +735,31 @@ const AdminDashboard = () => {
                             type="number"
                             step="0.1"
                             value={team.teamWar}
-                            onChange={(e) => updateTeam(team.id, 'teamWar', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updateTeamLocally(team.id, 'teamWar', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
                           />
                         </td>
                         <td className="p-2">
-                          <button
-                            onClick={() => deleteTeam(team.id)}
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex gap-2">
+                            {editedTeams[team.id] ? (
+                              <button
+                                onClick={() => saveTeam(team.id)}
+                                className="text-green-400 hover:text-green-300"
+                                title="Save changes"
+                              >
+                                <Save className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <Check className="w-4 h-4 text-gray-500" />
+                            )}
+                            <button
+                              onClick={() => deleteTeam(team.id)}
+                              className="text-red-400 hover:text-red-300"
+                              title="Delete team"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -713,7 +773,8 @@ const AdminDashboard = () => {
         {/* Footer */}
         <div className="text-center mt-8 text-gray-500 text-sm">
           <p>Connected to PostgreSQL database</p>
-          <p className="mt-1">All changes are saved automatically</p>
+          <p className="mt-1">Click the save icon after making changes to commit to database</p>
+          <p className="mt-1 text-yellow-500">Yellow background = unsaved changes</p>
         </div>
       </div>
     </div>
