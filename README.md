@@ -2,109 +2,118 @@
 
 **⚠️ BETA VERSION**: This application is in active development. Features may change, and bugs may exist.
 
-A React-based web application that analyzes MLB player contracts and team payrolls from a performance vs. salary perspective.
+Badder-Calc 2 is a full-stack web application that helps baseball fans and analysts evaluate the **dollar value of player contracts and team payrolls** using advanced sabermetric metrics such as WAR (Wins Above Replacement) and wRC+.  
+The project powers [BadderSports.com](https://baddersports.com) & the Swing Badder podcast, providing an easy way to answer the eternal question: **"Did we overpay?"**
 
-🔗 **Live Beta**: [https://contract-war-calculator.onrender.com/](https://contract-war-calculator.onrender.com/)
+---
 
-## What is this?
+## 📑 Table of Contents
+1. [Live Demo](#live-demo)
+2. [Features](#features)
+3. [Quick Start](#quick-start)
+4. [CSV Import / Export](#csv-import--export)
+5. [Roadmap](#roadmap)
+6. [Contributing](#contributing)
+7. [License & Ownership](#license--ownership)
+8. [Disclaimer](#disclaimer)
+9. [Credits](#credits)
 
-Ever wondered if your team overpaid for that free agent? Or found an absolute steal in a trade? This calculator answers those questions by comparing what teams pay versus what they get in return, measured in WAR (Wins Above Replacement).
+---
 
-The tool transforms complex baseball analytics into simple answers: Is this contract good value or not?
+## Live Demo
+A public beta is hosted on **Render**:
+
+👉 https://contract-war-calculator.onrender.com/
+
+Back-end API (may spin down on free tier):  
+👉 https://badder-calc-backend.onrender.com
+
+---
 
 ## Features
 
 ### 🧮 Three Calculator Modes
+1. **WAR Calculator** – Compare player salary to fWAR, bWAR or an average of both.
+2. **wRC+ Calculator** – Convert offensive production to dollar value (position-adjusted).
+3. **Team Analyzer** – Evaluate an entire payroll, project wins, and surface surplus value.
 
-1. **WAR Value Calculator** - Analyze individual player contracts
-   - Choose between fWAR, bWAR, or average
-   - Get instant categorization from "Historic Bargain" to "Poor Value"
-   - See surplus value in dollars
+### 🔄 Admin Dashboard
+* Import / export **CSV** files for players & teams.
+* Inline editing with validation and duplicate detection.
+* Bulk operations & history panel.
 
-2. **wRC+ Value Calculator** - Focus on offensive production
-   - Convert hitting performance to dollar value
-   - Perfect for evaluating DHs and corner positions
-   - Position-adjusted comparisons
+### 💎 Extras
+* URL-shareable calculations.
+* PWA: offline support & home-screen installation.
+* Fully responsive UI built with **React 18 + Vite**.
 
-3. **Team Analysis** - Evaluate entire payrolls
-   - See which teams spend efficiently
-   - Project full-season wins
-   - Compare actual vs. expected performance
+---
 
-### 🎯 Additional Features
+## Architecture
+```mermaid
+flowchart TD
+  A[React Frontend] -->|REST calls| B(Express Server @ backend/)
+  B -->|SQL| C[(PostgreSQL)]
+  B -->|CSV Upload| C
+  A -->|Static Assets| D[Render Static Site]
+  B --> D
+```
+* **Frontend (src/**) – React, Vite, Tailwind CSS.
+* **Backend (backend/**) – Express 4, PostgreSQL (via `pg`), dotenv, CORS.
+* **Database** – Two tables (`players`, `teams`) created automatically on server start.
 
-- **Position Adjustments**: Compare players to their positional peers
-- **Example Contracts**: One-click examples from each value category
-- **Calculation History**: Track your last 10 calculations
-- **Share via URL**: Send specific calculations to friends
-- **Mobile Optimized**: Works great on phones and tablets
-- **Offline Support**: Progressive Web App capabilities
+---
 
-## How It Works
-
-The calculator uses straightforward formulas based on current market rates:
-
-**For Individual Players:**
-- Cost per WAR = Salary ÷ WAR
-- Market rate ≈ $8M per WAR (2024)
-- Surplus Value = (WAR × $8M) - Salary
-
-**For Teams:**
-- Projected Wins = (Team WAR ÷ 43) × 81
-- A .500 team typically has ~43 WAR
-
-## Tech Stack
-
-- **Frontend**: React 18 with Vite
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **Hosting**: Render.com
-- **PWA**: Service Worker for offline use
-
-## Local Development
+## Quick Start
+Requires Node >= 18.
 
 ```bash
-# Clone the repository
-git clone https://github.com/harnischllc/badder-calc.git
-cd badder-calc
-
-# Install dependencies
+git clone https://github.com/harnischllc/badder-calc-2.git
+cd badder-calc-2
 npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
+npm run dev   # open http://localhost:5173
 ```
+> Don’t like Docker? See the manual setup below.
+
+<!-- Backend-specific setup and environment variables intentionally omitted -->
+
+---
+
+## CSV Import / Export
+The Admin Dashboard accepts CSV files with the following headers:
+
+### Players
+| name | playerId | season | position | war | fwar | bwar | wrcPlus | salary |
+|------|----------|--------|----------|-----|------|------|---------|--------|
+
+### Teams
+| teamName | season | totalPayroll | activePayroll | teamWar |
+|----------|--------|--------------|---------------|---------|
+
+Validation rules are enforced server-side (e.g. salary 0-1000 million, WAR −10-20).  
+Duplicate `(playerId, season)` or `(teamName, season)` pairs are **skipped automatically** and reported back to the UI.
+
+---
 
 ## Roadmap
-
-### Coming Soon (2025)
-- [ ] Live salary data integration
-- [ ] Real-time WAR updates
-- [ ] Player search with autocomplete
-- [ ] Multi-year contract analysis
-
-### Future Plans
-- [ ] Contract prediction models
+- [ ] Live salary & WAR data feeds (FanGraphs API)
+- [ ] Multi-year contract analysis & visualizations
+- [ ] Autocomplete player / team search
 - [ ] Trade value calculator
-- [ ] NBA, NFL, and NHL versions
-- [ ] API for developers
+- [ ] NBA / NFL / NHL versions
 
-## Contributing & Feedback
+---
 
-This is a beta release and we'd love your feedback! Please report bugs or suggest features:
+## Contributing
+PRs are very welcome! To get started:
+1. Fork the repo & create a feature branch.
+2. Install dependencies & run the dev server (`npm install && npm run dev`).
+3. Run `npm run lint` (ESLint strict) and add tests where appropriate.
+4. Submit a pull request with a clear description & screenshots.
 
-- **Issues**: [GitHub Issues](https://github.com/harnischllc/badder-calc/issues)
-- **Email**: Contact via [BadderSports.com](https://baddersports.com)
+Please open an issue first if you plan a large feature – we can coordinate on scope.
 
-## Data Sources
-
-Currently using 2024 static data. Links to source data:
-- [Spotrac](https://www.spotrac.com/mlb/) - Salary information
-- [FanGraphs](https://www.fangraphs.com) - fWAR data
-- [Baseball Reference](https://www.baseball-reference.com) - bWAR data
+---
 
 ## License & Ownership
 
@@ -116,9 +125,13 @@ The code is viewable for transparency and educational purposes. All rights to co
 
 For licensing inquiries: eric@ericharnisch.com
 
+---
+
 ## Disclaimer
 
 This tool is for entertainment and educational purposes. Calculations are estimates based on publicly available data and simplified models. Always consider full context when evaluating contracts.
+
+---
 
 ## Credits
 
