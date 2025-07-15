@@ -3,20 +3,22 @@
 // Unauthorized commercial use or branding is prohibited.
 
 import React, { useState, useEffect } from 'react';
-import { Upload, Download, Trash2, Plus, Database, Users, Building2, RefreshCw, Save, Check } from 'lucide-react';
+import { Upload, Download, Trash2, Plus, Database, Users, Building2, RefreshCw, Save, Check, LogOut, ArrowUpDown } from 'lucide-react';
 import Papa from 'papaparse';
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ onExit }) => {
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [editedPlayers, setEditedPlayers] = useState({}); // Track edited players
-  const [editedTeams, setEditedTeams] = useState({}); // Track edited teams
+  const [editedPlayers, setEditedPlayers] = useState({});
+  const [editedTeams, setEditedTeams] = useState({});
   const [activeTab, setActiveTab] = useState('players');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [playerSort, setPlayerSort] = useState({ field: 'name', order: 'asc' });
+  const [teamSort, setTeamSort] = useState({ field: 'teamName', order: 'asc' });
 
-  // API URL - Update this to your backend URL when deployed
-  const API_URL = process.env.REACT_APP_API_URL || 'https://badder-calc-backend.onrender.com';
+  // API URL - Using Vite environment variable
+  const API_URL = import.meta.env.VITE_API_URL || 'https://badder-calc-backend.onrender.com';
 
   useEffect(() => {
     // Load data from API on component mount
@@ -75,6 +77,62 @@ const AdminDashboard = () => {
     setTimeout(() => setMessage(''), 3000);
   };
 
+  // Sorting functions
+  const sortPlayers = (field) => {
+    const newOrder = playerSort.field === field && playerSort.order === 'asc' ? 'desc' : 'asc';
+    setPlayerSort({ field, order: newOrder });
+    
+    const sorted = [...players].sort((a, b) => {
+      let aVal = a[field];
+      let bVal = b[field];
+      
+      // Handle numeric vs string sorting
+      if (typeof aVal === 'number') {
+        return newOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      } else {
+        aVal = String(aVal).toLowerCase();
+        bVal = String(bVal).toLowerCase();
+        return newOrder === 'asc' 
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+    });
+    
+    setPlayers(sorted);
+  };
+
+  const sortTeams = (field) => {
+    const newOrder = teamSort.field === field && teamSort.order === 'asc' ? 'desc' : 'asc';
+    setTeamSort({ field, order: newOrder });
+    
+    const sorted = [...teams].sort((a, b) => {
+      let aVal = a[field];
+      let bVal = b[field];
+      
+      // Handle numeric vs string sorting
+      if (typeof aVal === 'number') {
+        return newOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      } else {
+        aVal = String(aVal).toLowerCase();
+        bVal = String(bVal).toLowerCase();
+        return newOrder === 'asc' 
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+    });
+    
+    setTeams(sorted);
+  };
+
+  // Check for duplicate player
+  const isDuplicatePlayer = (playerId, season, currentId = null) => {
+    return players.some(p => 
+      p.playerId === playerId && 
+      p.season === season && 
+      p.id !== currentId
+    );
+  };
+
   // Player Management Functions
   const handlePlayerFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -97,13 +155,28 @@ const AdminDashboard = () => {
           salary: parseFloat(player.salary) || 0
         }));
 
+        // Check for duplicates in import
+        const duplicates = [];
+        const uniquePlayers = validPlayers.filter(player => {
+          const isDupe = isDuplicatePlayer(player.playerId, player.season);
+          if (isDupe) {
+            duplicates.push(`${player.name} (${player.season})`);
+            return false;
+          }
+          return true;
+        });
+
+        if (duplicates.length > 0) {
+          showMessage(`Skipped ${duplicates.length} duplicate players: ${duplicates.slice(0, 3).join(', ')}${duplicates.length > 3 ? '...' : ''}`, 'warning');
+        }
+
         try {
           const response = await fetch(`${API_URL}/api/players/bulk`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ players: validPlayers })
+            body: JSON.stringify({ players: uniquePlayers })
           });
 
           if (response.ok) {
@@ -184,6 +257,19 @@ const AdminDashboard = () => {
 
   // Update local state only - don't save to database yet
   const updatePlayerLocally = (id, field, value) => {
+    const player = players.find(p => p.id === id);
+    
+    // Check for duplicate when updating playerId or season
+    if ((field === 'playerId' || field === 'season') && player) {
+      const checkPlayerId = field === 'playerId' ? value : player.playerId;
+      const checkSeason = field === 'season' ? value : player.season;
+      
+      if (isDuplicatePlayer(checkPlayerId, checkSeason, id)) {
+        showMessage(`Duplicate player: ${player.name} already exists for ${checkSeason}`, 'error');
+        return;
+      }
+    }
+    
     setPlayers(players.map(p => p.id === id ? { ...p, [field]: value } : p));
     setEditedPlayers({ ...editedPlayers, [id]: true });
   };
@@ -192,6 +278,24 @@ const AdminDashboard = () => {
   const savePlayer = async (id) => {
     const player = players.find(p => p.id === id);
     if (!player) return;
+
+    // Final duplicate check before saving
+    if (isDuplicatePlayer(player.playerId, player.season, id)) {
+      showMessage(`Cannot save: Duplicate player ${player.name} for ${player.season}`, 'error');
+      return;
+    }
+
+    // Validate required fields
+    if (!player.name || !player.playerId || !player.season) {
+      showMessage('Name, Player ID, and Season are required', 'error');
+      return;
+    }
+
+    // Validate numeric fields
+    if (player.salary < 0 || player.war < -10 || player.war > 20) {
+      showMessage('Please check salary and WAR values', 'error');
+      return;
+    }
 
     const updatedPlayer = {
       ...player,
@@ -351,6 +455,18 @@ const AdminDashboard = () => {
     const team = teams.find(t => t.id === id);
     if (!team) return;
 
+    // Validate required fields
+    if (!team.teamName || !team.season) {
+      showMessage('Team Name and Season are required', 'error');
+      return;
+    }
+
+    // Validate numeric fields
+    if (team.totalPayroll < 0 || team.activePayroll < 0 || team.teamWar < 0 || team.teamWar > 100) {
+      showMessage('Please check payroll and WAR values', 'error');
+      return;
+    }
+
     const updatedTeam = {
       ...team,
       team_name: team.teamName,
@@ -415,6 +531,14 @@ const AdminDashboard = () => {
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-wider">
               Admin Dashboard
             </h1>
+            <button
+              onClick={onExit}
+              className="ml-4 flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm transition-colors"
+              title="Exit Admin"
+            >
+              <LogOut className="w-4 h-4" />
+              Exit
+            </button>
           </div>
           <p className="text-gray-400 text-base md:text-lg px-4">
             Manage player and team data for WAR Value Calculator
@@ -424,7 +548,9 @@ const AdminDashboard = () => {
         {/* Message Display */}
         {message && (
           <div className={`mb-4 p-3 rounded-lg ${
-            message.type === 'error' ? 'bg-red-900 text-red-100' : 'bg-green-900 text-green-100'
+            message.type === 'error' ? 'bg-red-900 text-red-100' : 
+            message.type === 'warning' ? 'bg-yellow-900 text-yellow-100' :
+            'bg-green-900 text-green-100'
           }`}>
             {message.text}
           </div>
@@ -503,15 +629,35 @@ const AdminDashboard = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700">
-                      <th className="text-left p-2">Name</th>
-                      <th className="text-left p-2">Player ID</th>
-                      <th className="text-left p-2">Season</th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortPlayers('name')} className="flex items-center gap-1 hover:text-red-500">
+                          Name <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortPlayers('playerId')} className="flex items-center gap-1 hover:text-red-500">
+                          Player ID <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortPlayers('season')} className="flex items-center gap-1 hover:text-red-500">
+                          Season <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
                       <th className="text-left p-2">Position</th>
-                      <th className="text-left p-2">WAR</th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortPlayers('war')} className="flex items-center gap-1 hover:text-red-500">
+                          WAR <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
                       <th className="text-left p-2">fWAR</th>
                       <th className="text-left p-2">bWAR</th>
                       <th className="text-left p-2">wRC+</th>
-                      <th className="text-left p-2">Salary ($M)</th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortPlayers('salary')} className="flex items-center gap-1 hover:text-red-500">
+                          Salary ($M) <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
                       <th className="text-left p-2">Actions</th>
                     </tr>
                   </thead>
@@ -606,6 +752,7 @@ const AdminDashboard = () => {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             value={player.salary}
                             onChange={(e) => updatePlayerLocally(player.id, 'salary', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
@@ -681,11 +828,27 @@ const AdminDashboard = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700">
-                      <th className="text-left p-2">Team Name</th>
-                      <th className="text-left p-2">Season</th>
-                      <th className="text-left p-2">Total Payroll ($M)</th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortTeams('teamName')} className="flex items-center gap-1 hover:text-red-500">
+                          Team Name <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortTeams('season')} className="flex items-center gap-1 hover:text-red-500">
+                          Season <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortTeams('totalPayroll')} className="flex items-center gap-1 hover:text-red-500">
+                          Total Payroll ($M) <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
                       <th className="text-left p-2">Active Payroll ($M)</th>
-                      <th className="text-left p-2">Team WAR</th>
+                      <th className="text-left p-2">
+                        <button onClick={() => sortTeams('teamWar')} className="flex items-center gap-1 hover:text-red-500">
+                          Team WAR <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
                       <th className="text-left p-2">Actions</th>
                     </tr>
                   </thead>
@@ -716,6 +879,7 @@ const AdminDashboard = () => {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             value={team.totalPayroll}
                             onChange={(e) => updateTeamLocally(team.id, 'totalPayroll', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-32"
@@ -725,6 +889,7 @@ const AdminDashboard = () => {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             value={team.activePayroll}
                             onChange={(e) => updateTeamLocally(team.id, 'activePayroll', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-32"
@@ -734,6 +899,8 @@ const AdminDashboard = () => {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
+                            max="100"
                             value={team.teamWar}
                             onChange={(e) => updateTeamLocally(team.id, 'teamWar', parseFloat(e.target.value) || 0)}
                             className="bg-gray-800 border border-gray-600 rounded px-2 py-1 w-20"
@@ -775,6 +942,7 @@ const AdminDashboard = () => {
           <p>Connected to PostgreSQL database</p>
           <p className="mt-1">Click the save icon after making changes to commit to database</p>
           <p className="mt-1 text-yellow-500">Yellow background = unsaved changes</p>
+          <p className="mt-1 text-red-500">Duplicate players (same ID & season) will be rejected</p>
         </div>
       </div>
     </div>
