@@ -1,6 +1,8 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { InputField } from './ContractWARComponents';
+import PlayerSearch from './search/PlayerSearch';
+import TeamSearch from './search/TeamSearch';
 
 const CalculatorForm = ({ 
   mode, 
@@ -17,58 +19,103 @@ const CalculatorForm = ({
   warType,
   payrollType,
   setPayrollType,
+  position,
+  setPosition,
   errors 
 }) => {
+  // Handle player selection from search
+  const handlePlayerSelect = (playerData) => {
+    setSalary(playerData.salary.toString());
+    
+    if (mode === 'individual') {
+      // Set WAR based on warType
+      if (warType === 'fWAR') {
+        setWar(playerData.fwar.toString());
+      } else if (warType === 'bWAR') {
+        setWar(playerData.bwar.toString());
+      } else {
+        setWar(playerData.war.toString());
+      }
+    } else if (mode === 'wrcplus') {
+      setWrcPlus(playerData.wrcPlus.toString());
+    }
+    
+    // Set position if available
+    if (playerData.position && setPosition) {
+      setPosition(playerData.position);
+    }
+  };
+
+  // Handle team selection from search
+  const handleTeamSelect = (teamData) => {
+    if (payrollType === 'active') {
+      setTeamPayroll(teamData.activePayroll.toString());
+    } else {
+      setTeamPayroll(teamData.totalPayroll.toString());
+    }
+    setTeamWAR(teamData.teamWar.toString());
+  };
+
   if (mode === 'individual') {
     return (
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
-        <div>
-          <InputField
-            label="Player Salary ($M)"
-            value={salary}
-            onChange={(e) => setSalary(e.target.value)}
-            placeholder="e.g., 35.5"
-            error={errors.salary}
-            tooltip="Enter the player's annual salary in millions"
-          />
-          
-          <a href="https://www.spotrac.com/mlb/contracts/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Look up salaries on Spotrac
-          </a>
-        </div>
-        
-        <div>
-          <InputField
-            label={`Player ${warType === 'avg' ? 'WAR' : warType}`}
-            value={war}
-            onChange={(e) => setWar(e.target.value)}
-            placeholder="e.g., 5.4"
-            error={errors.war}
-            tooltip={`Wins Above Replacement (${warType})`}
-          />
-          <div className="flex gap-4 mt-2">
-            <a href="https://www.fangraphs.com/leaders/war"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <ExternalLink className="w-3 h-3" />
-              fWAR
-            </a>
+      <div>
+        {/* Player Search */}
+        <PlayerSearch 
+          onPlayerSelect={handlePlayerSelect}
+          warType={warType}
+          mode={mode}
+          position={position}
+        />
+
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <InputField
+              label="Player Salary ($M)"
+              value={salary}
+              onChange={(e) => setSalary(e.target.value)}
+              placeholder="e.g., 35.5"
+              error={errors.salary}
+              tooltip="Enter the player's annual salary in millions"
+            />
             
-            <a href="https://www.baseball-reference.com/leagues/AL/2024-WAR-leaders.shtml"
+            <a href="https://www.spotrac.com/mlb/contracts/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+              className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
             >
               <ExternalLink className="w-3 h-3" />
-              bWAR
+              Look up salaries on Spotrac
             </a>
+          </div>
+          
+          <div>
+            <InputField
+              label={`Player ${warType === 'avg' ? 'WAR' : warType}`}
+              value={war}
+              onChange={(e) => setWar(e.target.value)}
+              placeholder="e.g., 5.4"
+              error={errors.war}
+              tooltip={`Wins Above Replacement (${warType})`}
+            />
+            <div className="flex gap-4 mt-2">
+              <a href="https://www.fangraphs.com/leaders/war"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                fWAR
+              </a>
+              
+              <a href="https://www.baseball-reference.com/leagues/AL/2024-WAR-leaders.shtml"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                bWAR
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -77,44 +124,54 @@ const CalculatorForm = ({
   
   if (mode === 'wrcplus') {
     return (
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
-        <div>
-          <InputField
-            label="Player Salary ($M)"
-            value={salary}
-            onChange={(e) => setSalary(e.target.value)}
-            placeholder="e.g., 35.5"
-            error={errors.salary}
-            tooltip="Enter the player's annual salary in millions"
-          />
+      <div>
+        {/* Player Search */}
+        <PlayerSearch 
+          onPlayerSelect={handlePlayerSelect}
+          warType={warType}
+          mode={mode}
+          position={position}
+        />
+
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <InputField
+              label="Player Salary ($M)"
+              value={salary}
+              onChange={(e) => setSalary(e.target.value)}
+              placeholder="e.g., 35.5"
+              error={errors.salary}
+              tooltip="Enter the player's annual salary in millions"
+            />
+            
+            <a href="https://www.spotrac.com/mlb/contracts/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Look up salaries on Spotrac
+            </a>
+          </div>
           
-          <a href="https://www.spotrac.com/mlb/contracts/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Look up salaries on Spotrac
-          </a>
-        </div>
-        
-        <div>
-          <InputField
-            label="Player wRC+"
-            value={wrcPlus}
-            onChange={(e) => setWrcPlus(e.target.value)}
-            placeholder="e.g., 125"
-            error={errors.wrcPlus}
-            tooltip="Weighted Runs Created Plus (100 = league average)"
-          />
-          <a href="https://www.fangraphs.com/leaders/offense?season=2024&month=0&season1=2024&ind=0&team=0&pos=all&stats=bat&qual=y&type=8"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Look up wRC+ on FanGraphs
-          </a>
+          <div>
+            <InputField
+              label="Player wRC+"
+              value={wrcPlus}
+              onChange={(e) => setWrcPlus(e.target.value)}
+              placeholder="e.g., 125"
+              error={errors.wrcPlus}
+              tooltip="Weighted Runs Created Plus (100 = league average)"
+            />
+            <a href="https://www.fangraphs.com/leaders/offense?season=2024&month=0&season1=2024&ind=0&team=0&pos=all&stats=bat&qual=y&type=8"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 mt-2 text-sm text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Look up wRC+ on FanGraphs
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -123,6 +180,12 @@ const CalculatorForm = ({
   // Team mode
   return (
     <div className="space-y-6 mb-6">
+      {/* Team Search */}
+      <TeamSearch 
+        onTeamSelect={handleTeamSelect}
+        payrollType={payrollType}
+      />
+
       {/* Payroll Type Selector */}
       <div className="bg-gray-800 rounded p-4 border border-gray-700">
         <label className="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
