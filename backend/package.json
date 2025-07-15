@@ -1,6 +1,6 @@
 {
   "name": "war-calculator-backend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Backend API for MLB WAR Calculator",
   "main": "server.js",
   "scripts": {
@@ -9,15 +9,15 @@
     "init-db": "node init-db.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "express": "^4.19.2",
     "cors": "^2.8.5",
-    "pg": "^8.11.0",
-    "dotenv": "^16.3.1"
+    "pg": "^8.12.0",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.1.4"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   }
 }
