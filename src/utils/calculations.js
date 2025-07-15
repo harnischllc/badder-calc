@@ -23,26 +23,30 @@ export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData, gam
   const teamPayroll = payrollInMillions * 1000000;
   const marketRatePerWAR = LEAGUE_DATA.marketRatePerWAR;
   
+  // Validate inputs
+  const validatedPayroll = Math.max(0, payrollInMillions);
+  const validatedWAR = Math.max(0, teamWAR);
+  
   // Calculate cost per WAR
-  const costPerWAR = parseFloat((payrollInMillions / teamWAR).toFixed(2));
+  const costPerWAR = validatedWAR > 0 ? parseFloat((validatedPayroll / validatedWAR).toFixed(2)) : Infinity;
   
   // Expected WAR based on payroll
-  const expectedWAR = payrollInMillions / (marketRatePerWAR / 1000000);
+  const expectedWAR = validatedPayroll / (marketRatePerWAR / 1000000);
   
   // Market value of team's actual WAR
-  const marketValue = (teamWAR * marketRatePerWAR) / 1000000;
+  const marketValue = (validatedWAR * marketRatePerWAR) / 1000000;
   
   // Efficiency ratio
-  const efficiency = parseFloat((teamWAR / expectedWAR).toFixed(2));
+  const efficiency = expectedWAR > 0 ? parseFloat((validatedWAR / expectedWAR).toFixed(2)) : 0;
   
   // Surplus value
-  const surplusValue = marketValue - payrollInMillions;
+  const surplusValue = marketValue - validatedPayroll;
   
   // FIXED: Win projection based on current pace
   // If games played is less than 162, project full season WAR
   const projectedFullSeasonWAR = gamesPlayed < 162 
-    ? (teamWAR / gamesPlayed) * 162 
-    : teamWAR;
+    ? (validatedWAR / gamesPlayed) * 162 
+    : validatedWAR;
   
   // Win percentage and projected wins for full season
   const winPercentage = ((projectedFullSeasonWAR / LEAGUE_DATA.avgTeamWAR) * 0.500).toFixed(3);
@@ -50,16 +54,16 @@ export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData, gam
   
   // Current win pace (if games played is provided)
   const currentWinPace = gamesPlayed < 162 
-    ? Math.round((teamWAR / LEAGUE_DATA.avgTeamWAR) * 81 * (162 / gamesPlayed))
+    ? Math.round((validatedWAR / LEAGUE_DATA.avgTeamWAR) * 81 * (162 / gamesPlayed))
     : projectedWins;
   
   // Determine team category
   const teamCategory = getTeamCategory(costPerWAR);
   
   return {
-    teamPayroll: payrollInMillions,
-    teamWAR,
-    costPerWAR,
+    teamPayroll: validatedPayroll,
+    teamWAR: validatedWAR,
+    costPerWAR: isFinite(costPerWAR) ? costPerWAR : 'N/A',
     expectedWAR: parseFloat(expectedWAR.toFixed(1)),
     marketValue: parseFloat(marketValue.toFixed(1)),
     efficiency,
@@ -75,7 +79,9 @@ export const calculateTeamMetrics = (payrollInMillions, teamWAR, leagueData, gam
 
 // Determine team efficiency category
 export const getTeamCategory = (costPerWAR) => {
-  if (costPerWAR < 3.0) {
+  if (!isFinite(costPerWAR)) {
+    return 'No Data';
+  } else if (costPerWAR < 3.0) {
     return 'Elite Efficiency';
   } else if (costPerWAR < 6.0) {
     return 'Above Average';
@@ -96,15 +102,22 @@ export const validateTeamInputs = (payroll, war) => {
   if (!payroll || parseFloat(payroll) <= 0) {
     errors.teamPayroll = 'Please enter a valid payroll greater than 0';
     isValid = false;
-  }
-  
-  if (!war || parseFloat(war) < 0) {
-    errors.teamWAR = 'Please enter a valid team WAR (minimum 0)';
+  } else if (parseFloat(payroll) < 10) {
+    errors.teamPayroll = 'Payroll seems low. Please verify (in millions)';
+    isValid = false;
+  } else if (parseFloat(payroll) > 500) {
+    errors.teamPayroll = 'Payroll seems high. Please verify (in millions)';
     isValid = false;
   }
   
-  if (parseFloat(war) > 70) {
-    errors.teamWAR = 'Team WAR seems unusually high. Please verify.';
+  if (war === '' || war === null || war === undefined) {
+    errors.teamWAR = 'Please enter a team WAR value';
+    isValid = false;
+  } else if (parseFloat(war) < 0) {
+    errors.teamWAR = 'Team WAR cannot be negative';
+    isValid = false;
+  } else if (parseFloat(war) > 70) {
+    errors.teamWAR = 'Team WAR seems unusually high. Please verify';
     isValid = false;
   }
   
@@ -116,20 +129,26 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
   const playerSalary = salaryInMillions * 1000000;
   const marketRatePerWAR = LEAGUE_DATA.marketRatePerWAR;
   
+  // Validate inputs
+  const validatedSalary = Math.max(0, salaryInMillions);
+  const validatedWAR = playerWAR; // Can be negative
+  
   // Cost per WAR
-  const costPerWAR = playerWAR > 0 ? parseFloat((salaryInMillions / playerWAR).toFixed(2)) : Infinity;
+  const costPerWAR = validatedWAR > 0 ? parseFloat((validatedSalary / validatedWAR).toFixed(2)) : Infinity;
   
   // Contract efficiency (player production value / actual salary)
-  const playerValue = playerWAR * leagueData.replacementSalary;
-  const contractEfficiency = parseFloat((playerValue / playerSalary).toFixed(2));
+  const playerValue = validatedWAR * leagueData.replacementSalary;
+  const contractEfficiency = playerSalary > 0 ? parseFloat((playerValue / playerSalary).toFixed(2)) : 0;
   
   // Surplus value (in millions)
-  const marketValue = (playerWAR * marketRatePerWAR) / 1000000;
-  const surplusValue = marketValue - salaryInMillions;
+  const marketValue = (validatedWAR * marketRatePerWAR) / 1000000;
+  const surplusValue = marketValue - validatedSalary;
   
   // Determine value category based on $/WAR
   let warValueCategory;
-  if (playerWAR < 0) {
+  if (validatedWAR < 0) {
+    warValueCategory = 'Poor Value';
+  } else if (validatedWAR === 0) {
     warValueCategory = 'Poor Value';
   } else if (costPerWAR < 2.0) {
     warValueCategory = 'Historic Bargain';
@@ -152,12 +171,12 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
   // Calculate positional value if position is provided
   let positionalData = null;
   if (position && POSITION_DATA[position]) {
-    positionalData = calculatePositionalValue(salaryInMillions, playerWAR, position, 'WAR');
+    positionalData = calculatePositionalValue(validatedSalary, validatedWAR, position, 'WAR');
   }
   
   return {
     playerSalary,
-    playerWAR,
+    playerWAR: validatedWAR,
     costPerWAR: isFinite(costPerWAR) ? costPerWAR : 'N/A',
     contractEfficiency,
     surplusValue,
@@ -165,6 +184,7 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
     warValueCategory,
     percentileRank,
     leagueAvgPerWAR: marketRatePerWAR / 1000000,
+    position,
     positionalData
   };
 };
@@ -174,13 +194,14 @@ export const calculatePositionalValue = (salary, performance, position, metric =
   const posData = POSITION_DATA[position];
   if (!posData) return null;
 
+  const avgPerformance = metric === 'WAR' ? posData.avgWAR : posData.avgWRCplus;
+  if (!avgPerformance) return null;
+
   const salaryRatio = salary / posData.avgSalary;
-  const performanceRatio = metric === 'WAR' 
-    ? performance / posData.avgWAR
-    : performance / posData.avgWRCplus;
+  const performanceRatio = performance / avgPerformance;
 
   // Positional Value Score: Performance relative to position avg vs Salary relative to position avg
-  const positionalValueScore = (performanceRatio / salaryRatio) * 100;
+  const positionalValueScore = salaryRatio > 0 ? (performanceRatio / salaryRatio) * 100 : 0;
 
   return {
     position,
@@ -188,46 +209,51 @@ export const calculatePositionalValue = (salary, performance, position, metric =
     salaryVsPositionAvg: ((salary / posData.avgSalary - 1) * 100).toFixed(1),
     performanceVsPositionAvg: ((performanceRatio - 1) * 100).toFixed(1),
     positionAvgSalary: posData.avgSalary,
-    positionAvgPerformance: metric === 'WAR' ? posData.avgWAR : posData.avgWRCplus
+    positionAvgPerformance: avgPerformance
   };
 };
 
 // For wRC+ specific calculations
 export const calculateWRCPlusValue = (salaryInMillions, wrcPlus, position = null) => {
+  // Validate inputs
+  const validatedSalary = Math.max(0, salaryInMillions);
+  const validatedWrcPlus = Math.max(0, wrcPlus);
+  
   // wRC+ where 100 = average
   // Each point above 100 is 1% better than average
-  const performanceAboveAverage = (wrcPlus - 100) / 100;
+  const performanceAboveAverage = (validatedWrcPlus - 100) / 100;
   
   // Rough estimate: 1 WAR ≈ 10 wRC+ points above average for full-time player
   const estimatedWAR = performanceAboveAverage * 10;
   
   // Value calculations
   const marketValue = estimatedWAR * 8; // $8M per WAR
-  const surplusValue = marketValue - salaryInMillions;
-  const efficiencyRating = wrcPlus / 100; // Simple efficiency vs average
+  const surplusValue = marketValue - validatedSalary;
+  const efficiencyRating = validatedWrcPlus / 100; // Simple efficiency vs average
   
   // Calculate positional value if position is provided
   let positionalData = null;
   if (position && POSITION_DATA[position] && POSITION_DATA[position].avgWRCplus) {
-    positionalData = calculatePositionalValue(salaryInMillions, wrcPlus, position, 'wRC+');
+    positionalData = calculatePositionalValue(validatedSalary, validatedWrcPlus, position, 'wRC+');
   }
   
   return {
-    wrcPlus,
-    playerSalary: salaryInMillions * 1000000,
-    salaryInMillions,
+    wrcPlus: validatedWrcPlus,
+    playerSalary: validatedSalary * 1000000,
+    salaryInMillions: validatedSalary,
     performanceAboveAverage: (performanceAboveAverage * 100).toFixed(1),
     estimatedWAR: estimatedWAR.toFixed(1),
     marketValue: marketValue.toFixed(1),
     surplusValue: surplusValue.toFixed(1),
     efficiencyRating: efficiencyRating.toFixed(2),
-    category: getWRCPlusCategory(wrcPlus, salaryInMillions),
+    category: getWRCPlusCategory(validatedWrcPlus, validatedSalary),
+    position,
     positionalData
   };
 };
 
 const getWRCPlusCategory = (wrcPlus, salary) => {
-  const valueRatio = wrcPlus / salary; // Simple ratio for categorization
+  const valueRatio = salary > 0 ? wrcPlus / salary : 0; // Simple ratio for categorization
   
   if (wrcPlus >= 140 && salary < 10) return 'Elite Bargain';
   if (wrcPlus >= 120 && valueRatio > 10) return 'High Value';
@@ -244,20 +270,22 @@ export const validateInputs = (salary, war) => {
   if (!salary || parseFloat(salary) <= 0) {
     errors.salary = 'Please enter a valid salary greater than 0';
     isValid = false;
+  } else if (parseFloat(salary) < 0.1) {
+    errors.salary = 'Salary seems low. Please verify (in millions)';
+    isValid = false;
+  } else if (parseFloat(salary) > 100) {
+    errors.salary = 'Salary seems high. Please verify (in millions)';
+    isValid = false;
   }
   
   if (war === '' || war === null || war === undefined) {
     errors.war = 'Please enter a WAR value';
     isValid = false;
-  }
-  
-  if (parseFloat(war) < -5) {
-    errors.war = 'WAR seems unusually low. Please verify.';
+  } else if (parseFloat(war) < -5) {
+    errors.war = 'WAR seems unusually low. Please verify';
     isValid = false;
-  }
-  
-  if (parseFloat(war) > 15) {
-    errors.war = 'WAR seems unusually high. Please verify.';
+  } else if (parseFloat(war) > 15) {
+    errors.war = 'WAR seems unusually high. Please verify';
     isValid = false;
   }
   
@@ -272,15 +300,19 @@ export const validateWRCPlusInputs = (salary, wrcPlus) => {
   if (!salary || parseFloat(salary) <= 0) {
     errors.salary = 'Please enter a valid salary greater than 0';
     isValid = false;
-  }
-  
-  if (!wrcPlus || parseFloat(wrcPlus) < 0) {
-    errors.wrcPlus = 'Please enter a valid wRC+ value';
+  } else if (parseFloat(salary) < 0.1) {
+    errors.salary = 'Salary seems low. Please verify (in millions)';
+    isValid = false;
+  } else if (parseFloat(salary) > 100) {
+    errors.salary = 'Salary seems high. Please verify (in millions)';
     isValid = false;
   }
   
-  if (parseFloat(wrcPlus) > 250) {
-    errors.wrcPlus = 'wRC+ seems unusually high. Please verify.';
+  if (!wrcPlus || parseFloat(wrcPlus) < 0) {
+    errors.wrcPlus = 'Please enter a valid wRC+ value (minimum 0)';
+    isValid = false;
+  } else if (parseFloat(wrcPlus) > 250) {
+    errors.wrcPlus = 'wRC+ seems unusually high. Please verify';
     isValid = false;
   }
   
@@ -312,7 +344,9 @@ export const saveHistory = (history) => {
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   } catch (e) {
-    console.error('Failed to save history:', e);
+    if (import.meta.env.DEV) {
+      console.error('Failed to save history:', e);
+    }
   }
 };
 
@@ -321,7 +355,9 @@ export const loadHistory = () => {
     const saved = localStorage.getItem(HISTORY_KEY);
     return saved ? JSON.parse(saved) : [];
   } catch (e) {
-    console.error('Failed to load history:', e);
+    if (import.meta.env.DEV) {
+      console.error('Failed to load history:', e);
+    }
     return [];
   }
 };
@@ -330,6 +366,8 @@ export const clearHistory = () => {
   try {
     localStorage.removeItem(HISTORY_KEY);
   } catch (e) {
-    console.error('Failed to clear history:', e);
+    if (import.meta.env.DEV) {
+      console.error('Failed to clear history:', e);
+    }
   }
 };
