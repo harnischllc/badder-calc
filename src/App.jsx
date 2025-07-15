@@ -5,9 +5,11 @@
 import React, { useState, useEffect } from 'react';
 import AdminDashboard from './components/AdminDashboard';
 import WARValueCalculator from './WARValueCalculator';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const App = () => {
   const [showAdmin, setShowAdmin] = useState(false);
+  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'defaultPassword2024';
 
   useEffect(() => {
     // Check URL on load and listen for changes
@@ -15,9 +17,10 @@ const App = () => {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('admin') === 'true') {
         const password = prompt('Enter admin password:');
-        if (password === 'badderadmin2024') {
+        if (password === ADMIN_PASSWORD) {
           setShowAdmin(true);
         } else {
+          alert('Invalid password');
           window.history.replaceState({}, '', window.location.pathname);
         }
       }
@@ -31,21 +34,27 @@ const App = () => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
         e.preventDefault();
         const password = prompt('Enter admin password:');
-        if (password === 'badderadmin2024') {
+        if (password === ADMIN_PASSWORD) {
           setShowAdmin(true);
+        } else {
+          alert('Invalid password');
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [ADMIN_PASSWORD]);
 
-  if (showAdmin) {
-    return <AdminDashboard />;
-  }
-  
-  return <WARValueCalculator />;
+  return (
+    <ErrorBoundary>
+      {showAdmin ? (
+        <AdminDashboard onExit={() => setShowAdmin(false)} />
+      ) : (
+        <WARValueCalculator />
+      )}
+    </ErrorBoundary>
+  );
 };
 
 export default App;
