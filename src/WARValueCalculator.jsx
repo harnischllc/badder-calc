@@ -194,6 +194,8 @@ const WARValueCalculator = () => {
             warType={warType}
             payrollType={payrollType}
             setPayrollType={setPayrollType}
+            position={position}
+            setPosition={setPosition}
             errors={errors}
           />
 
