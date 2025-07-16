@@ -140,7 +140,7 @@ const ResultsDisplay = ({ results }) => {
       {/* Analysis Summary with Formulas */}
       <div className="bg-gray-800 rounded p-4 border border-gray-700">
         <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-          Calculation Breakdown
+          Calculation Breakdown ({results.year || 2024})
         </h4>
         <div className="space-y-3 text-sm">
           <div className="p-3 bg-gray-900 rounded">
@@ -151,11 +151,11 @@ const ResultsDisplay = ({ results }) => {
           </div>
           
           <div className="p-3 bg-gray-900 rounded">
-            <div className="text-gray-400 mb-1">Contract Efficiency:</div>
+            <div className="text-gray-400 mb-1">Contract Efficiency (Fixed):</div>
             <code className="text-white">
-              ({results.playerWAR} WAR × $0.74M) ÷ ${(results.playerSalary / 1000000).toFixed(1)}M = {results.contractEfficiency}x
+              ({results.playerWAR} WAR × ${results.leagueAvgPerWAR}M) ÷ ${(results.playerSalary / 1000000).toFixed(1)}M = {results.contractEfficiency}x
             </code>
-            <div className="text-xs text-gray-500 mt-1">*Using league minimum ($740K) as baseline</div>
+            <div className="text-xs text-gray-500 mt-1">*Now uses same baseline as surplus value: ${results.leagueAvgPerWAR}M per WAR</div>
           </div>
           
           <div className="p-3 bg-gray-900 rounded">
@@ -163,8 +163,17 @@ const ResultsDisplay = ({ results }) => {
             <code className="text-white">
               ({results.playerWAR} WAR × ${results.leagueAvgPerWAR}M) - ${(results.playerSalary / 1000000).toFixed(1)}M = ${results.surplusValue.toFixed(1)}M
             </code>
-            <div className="text-xs text-gray-500 mt-1">*Market rate: $8M per WAR</div>
+            <div className="text-xs text-gray-500 mt-1">*Market rate: ${results.leagueAvgPerWAR}M per WAR</div>
           </div>
+          
+          {results.year && results.year !== 2024 && (
+            <div className="p-3 bg-blue-900 rounded border border-blue-700">
+              <div className="text-blue-300 mb-1">Historical Context ({results.year}):</div>
+              <div className="text-blue-200 text-xs">
+                League minimum: ${(results.leagueMinimum / 1000).toFixed(0)}K • Market rate: ${(results.marketRatePerWAR / 1000000).toFixed(1)}M per WAR
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
