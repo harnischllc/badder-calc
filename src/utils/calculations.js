@@ -1,7 +1,7 @@
 // © 2024–2025 Harnisch LLC. All rights reserved.
 // Developed in partnership with BadderSports and SwingBadder.
 // Unauthorized commercial use or branding is prohibited.
-import { LEAGUE_DATA } from './constants';
+import { LEAGUE_DATA, getLeagueDataForYear } from './constants';
 
 // Position data for calculations
 const POSITION_DATA = {
@@ -124,10 +124,13 @@ export const validateTeamInputs = (payroll, war) => {
   return { errors, isValid };
 };
 
-// Individual player calculations
-export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData, position = null) => {
+// Individual player calculations - FIXED BASELINE INCONSISTENCY
+export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData, position = null, year = 2024) => {
   const playerSalary = salaryInMillions * 1000000;
-  const marketRatePerWAR = LEAGUE_DATA.marketRatePerWAR;
+  
+  // Get year-specific league data
+  const yearData = getLeagueDataForYear(year);
+  const marketRatePerWAR = yearData.marketRatePerWAR;
   
   // Validate inputs
   const validatedSalary = Math.max(0, salaryInMillions);
@@ -136,11 +139,12 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
   // Cost per WAR
   const costPerWAR = validatedWAR > 0 ? parseFloat((validatedSalary / validatedWAR).toFixed(2)) : Infinity;
   
-  // Contract efficiency (player production value / actual salary)
-  const playerValue = validatedWAR * leagueData.replacementSalary;
+  // FIXED: Contract efficiency now uses same baseline as surplus value ($8M per WAR)
+  // This makes both metrics consistent with your friend's CVI formula
+  const playerValue = validatedWAR * marketRatePerWAR;
   const contractEfficiency = playerSalary > 0 ? parseFloat((playerValue / playerSalary).toFixed(2)) : 0;
   
-  // Surplus value (in millions)
+  // Surplus value (in millions) - uses same baseline as efficiency
   const marketValue = (validatedWAR * marketRatePerWAR) / 1000000;
   const surplusValue = marketValue - validatedSalary;
   
@@ -160,12 +164,12 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
     warValueCategory = 'Poor Value';
   }
   
-  // Percentile rank (simplified)
+  // Percentile rank (simplified) - adjusted for new efficiency scale
   let percentileRank;
-  if (contractEfficiency >= 2.0) percentileRank = 95;
-  else if (contractEfficiency >= 1.5) percentileRank = 80;
+  if (contractEfficiency >= 1.5) percentileRank = 95;
+  else if (contractEfficiency >= 1.25) percentileRank = 80;
   else if (contractEfficiency >= 1.0) percentileRank = 60;
-  else if (contractEfficiency >= 0.5) percentileRank = 30;
+  else if (contractEfficiency >= 0.75) percentileRank = 30;
   else percentileRank = 10;
   
   // Calculate positional value if position is provided
@@ -185,7 +189,10 @@ export const calculateContractMetrics = (salaryInMillions, playerWAR, leagueData
     percentileRank,
     leagueAvgPerWAR: marketRatePerWAR / 1000000,
     position,
-    positionalData
+    positionalData,
+    year: year,
+    marketRatePerWAR: marketRatePerWAR,
+    leagueMinimum: yearData.replacementSalary
   };
 };
 
