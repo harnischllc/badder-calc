@@ -7,6 +7,7 @@ import { Calculator, X, History } from 'lucide-react';
 import ModeSelector from './components/ModeSelector';
 import WARTypeSelector from './components/WARTypeSelector';
 import PositionSelector from './components/PositionSelector';
+import YearSelector from './components/YearSelector';
 import ExampleContracts from './components/ExampleContracts';
 import CalculatorForm from './components/CalculatorForm';
 import HistoryPanel from './components/HistoryPanel';
@@ -35,6 +36,7 @@ const WARValueCalculator = () => {
   const [teamWAR, setTeamWAR] = useState('');
   const [warType, setWarType] = useState('avg');
   const [payrollType, setPayrollType] = useState('total');
+  const [year, setYear] = useState(2024);
   const [results, setResults] = useState(null);
   const [errors, setErrors] = useState({ salary: '', war: '', wrcPlus: '', teamPayroll: '', teamWAR: '' });
   
@@ -60,10 +62,17 @@ const WARValueCalculator = () => {
       setSalary(example.salary);
       setWar(example.war);
       setPosition(example.position || '');
+      // Set year if example has a year
+      if (example.year) {
+        setYear(example.year);
+      }
     } else if (mode === 'wrcplus') {
       setSalary(example.salary);
       setWrcPlus(example.wrcPlus);
       setPosition(example.position || '');
+      if (example.year) {
+        setYear(example.year);
+      }
     } else {
       setTeamPayroll(example.payroll);
       setTeamWAR(example.war);
@@ -81,12 +90,14 @@ const WARValueCalculator = () => {
         parseFloat(salary), 
         parseFloat(war), 
         LEAGUE_DATA,
-        position
+        position,
+        year
       );
       
       results.warType = warType;
       results.mode = 'individual';
       results.position = position;
+      results.year = year;
       
       setResults(results);
       addToHistory(results);
@@ -104,11 +115,12 @@ const WARValueCalculator = () => {
       
       results.mode = 'wrcplus';
       results.position = position;
+      results.year = year;
       
       setResults(results);
       addToHistory({
         ...results,
-        name: `${wrcPlus} wRC+ @ $${parseFloat(salary).toFixed(1)}M`,
+        name: `${wrcPlus} wRC+ @ $${parseFloat(salary).toFixed(1)}M (${year})`,
         date: new Date().toLocaleDateString(),
         costPerWAR: 'N/A',
         category: results.category
@@ -127,6 +139,7 @@ const WARValueCalculator = () => {
       
       results.mode = 'team';
       results.payrollType = payrollType;
+      results.year = year;
       setResults(results);
       
       addToHistory(results);
@@ -162,6 +175,9 @@ const WARValueCalculator = () => {
 
         {/* Mode Selector */}
         <ModeSelector mode={mode} onModeChange={handleModeChange} />
+
+        {/* Year Selector */}
+        <YearSelector year={year} onYearChange={setYear} />
 
         {/* WAR Type Selector (Individual Mode Only) */}
         {mode === 'individual' && (
@@ -228,26 +244,30 @@ const WARValueCalculator = () => {
             </button>
           </div>
 
-          {/* History Panel */}
-          {showHistory && (
-            <HistoryPanel history={history} onClearHistory={clearHistory} />
+          {/* Results */}
+          {results && (
+            <div className="mt-6 md:mt-8">
+              {results.mode === 'individual' && <ResultsDisplay results={results} />}
+              {results.mode === 'team' && <TeamResultsDisplay results={results} />}
+              {results.mode === 'wrcplus' && <WRCPlusResultsDisplay results={results} />}
+            </div>
           )}
 
-          {/* Results Display */}
-          {results && (
-            results.mode === 'individual' ? 
-              <ResultsDisplay results={results} /> : 
-            results.mode === 'wrcplus' ?
-              <WRCPlusResultsDisplay results={results} /> :
-              <TeamResultsDisplay results={results} />
+          {/* History Panel */}
+          {showHistory && (
+            <HistoryPanel 
+              history={history} 
+              onClear={clearHistory} 
+              onClose={toggleHistory}
+            />
           )}
         </div>
 
-        {/* Footer Info */}
+        {/* Footer */}
         <div className="text-center mt-6 md:mt-8 text-gray-500 text-xs sm:text-sm">
-          <p>League averages based on 2024 MLB data</p>
+          <p>League averages based on {year} MLB data</p>
           <p className="mt-1">
-            Market rate: ~${LEAGUE_DATA.marketRatePerWAR / 1000000}M per WAR • 
+            Market rate: ~${(results?.marketRatePerWAR || LEAGUE_DATA.marketRatePerWAR) / 1000000}M per WAR • 
             League avg team: ~{LEAGUE_DATA.avgTeamWAR} WAR • 
             League avg wRC+: 100
           </p>
