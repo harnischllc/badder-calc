@@ -7,39 +7,40 @@ const individualExamples = [
     player: 'Dwight Gooden',
     salary: '0.45',
     war: '13.2',
-    year: '1985',
+    year: 1985,
+    position: 'SP',
     colorClass: 'text-purple-500',
-    display: '$0.45M / 13.2 WAR'
+    display: '$0.45M / 13.2 WAR (1985)'
   },
   {
     category: 'High Value',
     player: 'Freddie Freeman',
     salary: '15',
     war: '3.5',
-    year: '2020',
+    year: 2020,
     position: '1B',
     colorClass: 'text-green-500',
-    display: '$15M / 3.5 WAR'
+    display: '$15M / 3.5 WAR (2020)'
   },
   {
     category: 'Average',
     player: 'Zack Greinke',
     salary: '29.6',
     war: '3.5',
-    year: '2017',
+    year: 2017,
     position: 'SP',
     colorClass: 'text-yellow-500',
-    display: '$29.6M / 3.5 WAR'
+    display: '$29.6M / 3.5 WAR (2017)'
   },
   {
     category: 'Poor Value',
     player: 'Chris Davis',
     salary: '23.0',
     war: '-0.5',
-    year: '2018',
+    year: 2018,
     position: '1B',
     colorClass: 'text-red-500',
-    display: '$23M / -0.5 WAR'
+    display: '$23M / -0.5 WAR (2018)'
   }
 ];
 
@@ -50,40 +51,40 @@ const wrcPlusExamples = [
     player: 'Ronald Acuña Jr.',
     salary: '17',
     wrcPlus: '165',
-    year: '2023',
+    year: 2023,
     position: 'RF',
     colorClass: 'text-purple-500',
-    display: '$17M / 165 wRC+'
+    display: '$17M / 165 wRC+ (2023)'
   },
   {
     category: 'High Value',
     player: 'Freddie Freeman',
     salary: '27',
     wrcPlus: '144',
-    year: '2024',
+    year: 2024,
     position: '1B',
     colorClass: 'text-green-500',
-    display: '$27M / 144 wRC+'
+    display: '$27M / 144 wRC+ (2024)'
   },
   {
     category: 'Good Value',
     player: 'Xander Bogaerts',
     salary: '25',
     wrcPlus: '115',
-    year: '2024',
+    year: 2024,
     position: 'SS',
     colorClass: 'text-blue-500',
-    display: '$25M / 115 wRC+'
+    display: '$25M / 115 wRC+ (2024)'
   },
   {
     category: 'Poor Value',
     player: 'Kris Bryant',
     salary: '27',
     wrcPlus: '85',
-    year: '2024',
+    year: 2024,
     position: '3B',
     colorClass: 'text-red-500',
-    display: '$27M / 85 wRC+'
+    display: '$27M / 85 wRC+ (2024)'
   }
 ];
 
