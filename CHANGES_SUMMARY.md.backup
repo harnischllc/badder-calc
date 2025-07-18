@@ -1,0 +1,78 @@
+# Changes Summary: Fixed Baseline Inconsistency & Added Year Support
+
+## 🎯 Problem Identified by Your Friend
+
+Your friend correctly identified an **inconsistency in the baseline calculations**:
+
+### **Before (Inconsistent):**
+- **Contract Efficiency**: `(WAR × $0.74M) ÷ Salary` (using league minimum)
+- **Surplus Value**: `(WAR × $8M) - Salary` (using market rate)
+
+### **After (Consistent):**
+- **Contract Efficiency**: `(WAR × $8M) ÷ Salary` (using market rate)
+- **Surplus Value**: `(WAR × $8M) - Salary` (using market rate)
+
+## ✅ Changes Made
+
+### **1. Fixed Baseline Inconsistency**
+- **File**: `src/utils/calculations.js`
+- **Change**: Contract efficiency now uses `marketRatePerWAR` instead of `replacementSalary`
+- **Result**: Both metrics now use the same $8M baseline, matching your friend's CVI formula
+
+### **2. Added Year-Based Historical Calculations**
+- **File**: `src/utils/constants.js`
+- **Added**: 
+  - `LEAGUE_MINIMUM_BY_YEAR` (1985-2025) from baseball-almanac.com
+  - `MARKET_RATE_PER_WAR_BY_YEAR` (estimated historical rates)
+  - `getLeagueDataForYear()` function
+
+### **3. Enhanced UI Components**
+- **New**: `src/components/YearSelector.jsx` - Year dropdown (1985-2025)
+- **Updated**: `src/WARValueCalculator.jsx` - Added year state and parameter passing
+- **Updated**: `src/components/ResultsDisplay.jsx` - Shows corrected formulas and year context
+- **Updated**: `src/components/ExampleContracts.jsx` - Added year information to examples
+
+## 🧮 New Calculation Logic
+
+### **Your Friend's CVI Formula (Now Implemented):**
+```
+CVI = (Player WAR × Market Rate per WAR) ÷ Salary
+```
+
+### **Updated App Calculations:**
+```javascript
+// Both now use the same baseline
+const contractEfficiency = (validatedWAR * marketRatePerWAR) / playerSalary;
+const surplusValue = (validatedWAR * marketRatePerWAR) - playerSalary;
+```
+
+### **Year-Based Adjustments:**
+- **1985**: $60K league minimum, ~$500K per WAR
+- **2000**: $200K league minimum, ~$2.6M per WAR  
+- **2024**: $740K league minimum, ~$8M per WAR
+
+## 📊 Example: Dwight Gooden 1985
+
+**Before (2024 rates):**
+- Contract Efficiency: (13.2 × $0.74M) ÷ $0.45M = **21.7x**
+- Surplus Value: (13.2 × $8M) - $0.45M = **$105.1M**
+
+**After (1985 rates):**
+- Contract Efficiency: (13.2 × $0.5M) ÷ $0.45M = **14.7x**
+- Surplus Value: (13.2 × $0.5M) - $0.45M = **$6.1M**
+
+## 🎯 Benefits
+
+1. **Consistent Baselines**: Both efficiency and surplus use same market rate
+2. **Historical Accuracy**: Calculations adjust for era-appropriate rates
+3. **Better Comparisons**: Can now compare contracts across different years fairly
+4. **Matches Industry Standard**: Aligns with your friend's CVI methodology
+
+## 🚀 How to Use
+
+1. Select the **year** from the dropdown
+2. Enter player data as usual
+3. Results now show **year-appropriate** calculations
+4. Historical context is displayed for non-2024 years
+
+The app now provides **historically accurate and mathematically consistent** contract valuations! 

@@ -12,11 +12,12 @@ The project powers [BadderSports.com](https://baddersports.com) & the Swing Badd
 2. [Features](#features)
 3. [Quick Start](#quick-start)
 4. [CSV Import / Export](#csv-import--export)
-5. [Roadmap](#roadmap)
-6. [Contributing](#contributing)
-7. [License & Ownership](#license--ownership)
-8. [Disclaimer](#disclaimer)
-9. [Credits](#credits)
+5. [PWA Updates](#pwa-updates)
+6. [Roadmap](#roadmap)
+7. [Contributing](#contributing)
+8. [License & Ownership](#license--ownership)
+9. [Disclaimer](#disclaimer)
+10. [Credits](#credits)
 
 ---
 
@@ -49,6 +50,43 @@ Back-end API (may spin down on free tier):
 
 ---
 
+## PWA Updates
+
+This app is a Progressive Web App (PWA) that can be installed on mobile devices and desktops. When you make updates to the app, users will automatically be notified of new versions.
+
+### How Updates Work
+
+1. **Automatic Detection**: The app checks for updates every 30 minutes and when the app becomes visible again
+2. **Update Notification**: Users see a blue banner at the top when a new version is available
+3. **One-Click Update**: Users can tap "Update Now" to get the latest version
+4. **Automatic Refresh**: The app automatically reloads with the new version
+
+### For Developers
+
+To deploy a new version:
+
+1. **Update Version Numbers**:
+   ```bash
+   node scripts/update-version.js 1.2.0
+   ```
+
+2. **Build and Deploy**:
+   ```bash
+   npm run build
+   # Deploy to your hosting platform
+   ```
+
+3. **Users Get Updates**: Users will see update notifications on their next visit
+
+### Version Management
+
+- **Service Worker**: `public/sw.js` - Handles caching and update detection
+- **Manifest**: `public/manifest.json` - PWA configuration
+- **Version Utility**: `src/utils/version.js` - Centralized version tracking
+- **Update Manager**: `src/components/PWAUpdateManager.jsx` - UI for update notifications
+
+---
+
 ## Architecture
 ```mermaid
 flowchart TD
@@ -73,7 +111,7 @@ cd badder-calc-2
 npm install
 npm run dev   # open http://localhost:5173
 ```
-> Don’t like Docker? See the manual setup below.
+> Don't like Docker? See the manual setup below.
 
 <!-- Backend-specific setup and environment variables intentionally omitted -->
 
@@ -139,4 +177,4 @@ Created for [BadderSports.com](https://baddersports.com) | Follow [@swingbadderp
 
 ---
 
-**Version**: 0.3.0-beta | **Last Updated**: July 2025
+**Version**: 1.1.0 | **Last Updated**: July 2025

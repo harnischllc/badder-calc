@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import AdminDashboard from './components/AdminDashboard';
 import WARValueCalculator from './WARValueCalculator';
 import ErrorBoundary from './components/ErrorBoundary';
+import PWAUpdateManager from './components/PWAUpdateManager';
 
 const App = () => {
   const [showAdmin, setShowAdmin] = useState(false);
@@ -48,6 +49,7 @@ const App = () => {
 
   return (
     <ErrorBoundary>
+      <PWAUpdateManager />
       {showAdmin ? (
         <AdminDashboard onExit={() => setShowAdmin(false)} />
       ) : (

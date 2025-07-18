@@ -2,6 +2,7 @@
   "name": "BadderCalc - MLB Contract WAR Calculator",
   "short_name": "BadderCalc",
   "description": "Analyze MLB player contracts and team payrolls from a performance vs. salary perspective",
+  "version": "1.4.0",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
