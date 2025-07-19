@@ -111,9 +111,6 @@ cd badder-calc-2
 npm install
 npm run dev   # open http://localhost:5173
 ```
-> Don't like Docker? See the manual setup below.
-
-<!-- Backend-specific setup and environment variables intentionally omitted -->
 
 ---
 
@@ -161,7 +158,7 @@ This project is developed by **Harnisch LLC** in partnership with the BadderSpor
 
 The code is viewable for transparency and educational purposes. All rights to commercial use, resale, branding, and derivative works remain with Harnisch LLC and BadderSports. Unauthorized use of the SwingBadder or BadderSports names or likenesses is prohibited.
 
-For licensing inquiries: eric@ericharnisch.com
+For licensing inquiries: harnischllc@gmail.com
 
 ---
 

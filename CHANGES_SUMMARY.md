@@ -1,8 +1,8 @@
 # Changes Summary: Fixed Baseline Inconsistency & Added Year Support
 
-## 🎯 Problem Identified by Your Friend
+## 🎯 Problem Identified
 
-Your friend correctly identified an **inconsistency in the baseline calculations**:
+An **inconsistency in the baseline calculations** was identified:
 
 ### **Before (Inconsistent):**
 - **Contract Efficiency**: `(WAR × $0.74M) ÷ Salary` (using league minimum)
@@ -17,7 +17,7 @@ Your friend correctly identified an **inconsistency in the baseline calculations
 ### **1. Fixed Baseline Inconsistency**
 - **File**: `src/utils/calculations.js`
 - **Change**: Contract efficiency now uses `marketRatePerWAR` instead of `replacementSalary`
-- **Result**: Both metrics now use the same $8M baseline, matching your friend's CVI formula
+- **Result**: Both metrics now use the same $8M baseline, matching the industry-standard CVI formula
 
 ### **2. Added Year-Based Historical Calculations**
 - **File**: `src/utils/constants.js`
@@ -34,7 +34,7 @@ Your friend correctly identified an **inconsistency in the baseline calculations
 
 ## 🧮 New Calculation Logic
 
-### **Your Friend's CVI Formula (Now Implemented):**
+### **Industry-Standard CVI Formula (Now Implemented):**
 ```
 CVI = (Player WAR × Market Rate per WAR) ÷ Salary
 ```
@@ -66,7 +66,7 @@ const surplusValue = (validatedWAR * marketRatePerWAR) - playerSalary;
 1. **Consistent Baselines**: Both efficiency and surplus use same market rate
 2. **Historical Accuracy**: Calculations adjust for era-appropriate rates
 3. **Better Comparisons**: Can now compare contracts across different years fairly
-4. **Matches Industry Standard**: Aligns with your friend's CVI methodology
+4. **Matches Industry Standard**: Aligns with established CVI methodology
 
 ## 🚀 How to Use
 
