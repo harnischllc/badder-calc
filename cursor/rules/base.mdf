@@ -1,0 +1,30 @@
+# Project: Badder-Calc (MLB Contract/WAR Calculator)
+**Purpose.** Compute $ value from WAR/wRC+ and analyze team payrolls.
+**Stack.** Frontend: React 18 + Vite + Tailwind. Backend: Node/Express + pg (PostgreSQL). PWA: `public/sw.js`, `public/manifest.json`. Data I/O: CSV import/export.
+**Auth/Security.** No secrets in repo. Load env from `process.env`. Never log raw env values. Validate all CSV and API inputs.
+
+## Non-negotiables
+- Respect existing architecture:
+  - React: functional components + hooks; colocate component styles; keep state minimal; utilities in `src/utils/`.
+  - Express: `backend/` routes/controllers/services; parameterized queries via `pg`.
+- **Validation parity:** If you change schema or CSV rules, update backend validators AND CSV docs in README.
+- **PWA contract:** If modifying SW or versioning, ensure `src/components/PWAUpdateManager.jsx`, `src/utils/version.js`, and `public/manifest.json` stay in sync. Keep “Update Now” banner UX intact.
+- **Accessibility:** Semantic HTML; keyboard reachable; aria where needed.
+
+## Code style & tests
+- Follow ESLint/Prettier config in repo. Prefer small pure functions; add unit tests for utils (Vitest/Jest).
+- Commit messages: type(scope): short imperative. Include “BREAKING” when schema/API contract changes.
+
+## When adding or changing features
+- Prefer progressive enhancement; do not break offline mode.
+- For API changes: update route docs in README, add input and output examples, and add integration tests for error paths.
+- For CSV import: enforce duplicate skipping for `(playerId, season)` and `(teamName, season)`; return a precise report to UI of skipped rows + reasons.
+
+## Performance
+- Frontend: memoize heavy calcs; split non-critical routes; avoid large libraries.
+- Backend: index lookup columns; use EXPLAIN to check slow queries; paginate list endpoints.
+
+## Prompts the agent should accept (exact phrasing)
+- “Add a new wOBA→$ converter util; include unit tests and docs; do not change public API.”
+- “Extend Team Analyzer to project wins from teamWAR with confidence intervals; update UI and CSV export; keep PWA flow intact.”
+- “Refactor CSV validator to a single schema source; ensure admin UI error messages map 1:1 to backend reasons.”
