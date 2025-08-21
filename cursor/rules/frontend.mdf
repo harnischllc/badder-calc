@@ -1,0 +1,18 @@
+# Frontend Rules (React + Vite + Tailwind)
+- React 18 with hooks; no class components.
+- State: keep local; lift only as needed; derived values via memo.
+- Components live in `src/components`; pages in `src/pages`; utils in `src/utils`.
+- URL-shareable calculations: keep querystring helpers stable; add tests when changing.
+- Tailwind: prefer utilities over custom CSS; keep layout responsive first.
+
+**PWA changes checklist**
+1) Bump version via `node scripts/update-version.js <x.y.z>`.
+2) Rebuild; ensure SW caches new assets; confirm banner appears.
+3) Validate offline route behavior for calculator pages.
+
+**Do**
+- Use controlled inputs for numeric fields; validate on blur + before submit.
+- Add keyboard shortcuts only if discoverable and documented in README.
+
+**Avoid**
+- Hidden global state; side effects in render; anonymous inline functions inside long lists.
