@@ -1,0 +1,17 @@
+# Keep AI out of heavy/irrelevant dirs
+node_modules/
+dist/
+build/
+coverage/
+.tmp/
+.cache/
+**/.DS_Store
+
+# Secrets & local configs
+.env
+.env.*
+*.local
+*.log
+
+# Vite artifacts
+.vite/
