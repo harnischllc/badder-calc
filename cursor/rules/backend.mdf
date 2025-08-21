@@ -1,0 +1,13 @@
+# Backend Rules (Express + PostgreSQL)
+- Structure: `backend/` with routes → controllers → services → db.
+- Use parameterized queries only. Never build SQL strings from input.
+- Tables: `players`, `teams` (unique pairs: (playerId, season), (teamName, season)).
+- CSV import: stream + validate; return structured report: {inserted, skipped: [{row, reason}], duplicates}.
+- CORS: allow frontend origin only; set explicit methods/headers.
+
+**Endpoints contract**
+- Keep JSON field names stable; version if breaking is necessary (`/v2/...`).
+- Always return `problem+json` format on errors: {type, title, detail, status}.
+
+**Migrations**
+- When altering schema: include migration script; add DB index if querying by new columns; update README + validators.
