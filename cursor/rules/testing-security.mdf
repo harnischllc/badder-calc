@@ -1,0 +1,6 @@
+# Testing & Security
+- Unit tests for `src/utils/*` and CSV validators.
+- Integration tests for critical routes: CSV upload, calculators, team analyzer.
+- Security headers: set HSTS, no sniff, frameguard on backend; sanitize CSV fields.
+- Rate-limit admin endpoints; log auth-sensitive events without PII.
+- Never commit `.env*`. If the agent sees secret-like strings, stop and ask for env var names.
